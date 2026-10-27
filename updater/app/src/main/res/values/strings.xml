@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">DigitalTV Updater</string>
+    <string name="title">App updates</string>
+    <string name="intro">Check a public GitHub project for its latest signed launcher release.</string>
+    <string name="owner_hint">GitHub account or organization</string>
+    <string name="repository_hint">Repository name</string>
+    <string name="daily_check">Notify me about new releases once a day</string>
+    <string name="test_url_hint">Local test release URL (debug builds only)</string>
+    <string name="check_updates">Check for updates</string>
+    <string name="install_update">Download and install</string>
+    <string name="status_ready">Enter the GitHub owner and repository, then check.</string>
+    <string name="status_checking">Checking the latest release…</string>
+    <string name="status_downloading">Downloading and verifying the update…</string>
+    <string name="status_current">This app is up to date (%1$s).</string>
+    <string name="status_available">Version %1$s is ready to install. Current version: %2$s.</string>
+    <string name="status_invalid_repo">Enter a valid GitHub owner and repository.</string>
+    <string name="status_not_found">The release or update manifest could not be found.</string>
+    <string name="status_failed">Could not check for updates: %1$s</string>
+    <string name="status_verified">Update verified. Android will ask you to confirm installation.</string>
+    <string name="status_allow_install">Allow this updater to install apps in Android settings, then return and try again.</string>
+    <string name="not_installed">Not installed</string>
+    <string name="notification_title">DigitalTV update available</string>
+    <string name="notification_text">Version %1$s is ready. Open the updater to review and install it.</string>
+    <string name="notification_channel">Application updates</string>
+    <string name="install_note">Android will show its own confirmation before installing. The APK is checked against the release SHA-256 and must be signed with the same key as the installed app.</string>
+</resources>

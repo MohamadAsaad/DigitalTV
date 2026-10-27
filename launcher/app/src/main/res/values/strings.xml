@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Home</string>
+    <string name="app_name">DigitalTV</string>
     <string name="inputs">Inputs</string>
     <string name="wifi">Wi-Fi</string>
     <string name="settings">Settings</string>
@@ -46,7 +46,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN off</string>
     <string name="home_settings">Choose default home</string>
-    <string name="home_settings_help">Select your original home to stop using CleanYourTV as Home, or CleanYourTV to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
+    <string name="home_settings_help">Select your original home to stop using DigitalTV as Home, or DigitalTV to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
@@ -152,4 +152,69 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+    <string name="prayer_panel_title">NEXT PRAYER</string>
+    <string name="prayer_setup_home">Set location in Settings</string>
+    <string name="prayer_loading">Loading today’s prayer times…</string>
+    <string name="prayer_unavailable">Prayer times unavailable</string>
+    <string name="prayer_countdown">%1$s in %2$s</string>
+    <string name="prayer_fajr_tomorrow">Fajr tomorrow</string>
+    <string name="prayer_today_times">Today · %1$s</string>
+    <string name="prayer_countdown_hours">%1$02d:%2$02d</string>
+    <string name="prayer_countdown_minutes">%1$d min</string>
+    <string name="wallpaper_from_device">Choose from device…</string>
+    <string name="wallpaper_imported">Wallpaper selected</string>
+    <string name="wallpaper_import_failed">Could not use that image</string>
+    <string name="home_idle_clock_label">Idle clock</string>
+    <string name="home_idle_clock_state">Idle clock: %1$s</string>
+    <string name="home_idle_clock_off">Off</string>
+    <string name="home_idle_clock_15s">After 15 seconds</string>
+    <string name="home_idle_clock_45s">After 45 seconds</string>
+    <string name="home_idle_clock_30m">After 30 minutes</string>
+    <string name="home_idle_clock_60m">After 1 hour</string>
+    <string name="home_idle_clock_30s">After 30 seconds</string>
+    <string name="home_idle_clock_1m">After 1 minute</string>
+    <string name="home_idle_clock_2m">After 2 minutes</string>
+    <string name="home_idle_clock_5m">After 5 minutes</string>
+    <string name="home_idle_clock_10m">After 10 minutes</string>
+    <string name="home_idle_clock_15m">After 15 minutes</string>
+    <string name="tile_uninstall_app">Uninstall app…</string>
+    <string name="tile_uninstall_unavailable">This app cannot be uninstalled from Home.</string>
+    <string name="weather_panel_title">TODAY’S WEATHER</string>
+    <string name="weather_setup_home">Set location in Settings</string>
+    <string name="weather_loading">Loading today’s weather…</string>
+    <string name="weather_unavailable">Weather is temporarily unavailable</string>
+    <string name="weather_now">%1$s° · %2$s</string>
+    <string name="weather_today">High %1$s° · Low %2$s° · Rain %3$s%%</string>
+    <string name="weather_clear">Clear</string><string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_cloudy">Cloudy</string><string name="weather_fog">Fog</string>
+    <string name="weather_drizzle">Drizzle</string><string name="weather_rain">Rain</string>
+    <string name="weather_snow">Snow</string><string name="weather_showers">Showers</string>
+    <string name="weather_thunderstorm">Thunderstorm</string><string name="weather_unknown">Weather</string>
+    <string name="wallpaper_preview_title">Preview wallpaper</string><string name="wallpaper_apply">Use this wallpaper</string>
+    <string name="wallpaper_builtin_moon">Moonlit lake</string><string name="wallpaper_builtin_dunes">Quiet dunes</string><string name="wallpaper_builtin_coast">Golden coast</string>
+    <string name="wallpaper_dim_label">Wallpaper brightness</string><string name="wallpaper_dim_state">Wallpaper brightness: %1$s</string>
+    <string name="wallpaper_rotation_label">Automatic wallpaper change</string><string name="wallpaper_rotation_state">Wallpaper change: %1$s</string>
+    <string name="wallpaper_rotation_theme">Theme setting</string><string name="wallpaper_rotation_off">Off</string>
+    <string name="wallpaper_rotation_15m">Every 15 minutes</string><string name="wallpaper_rotation_30m">Every 30 minutes</string><string name="wallpaper_rotation_60m">Every hour</string>
+    <string name="home_card_order_label">Home information cards</string><string name="home_card_order_state">Home cards: %1$s</string>
+    <string name="prayer_settings_label">Prayer times and weather</string>
+    <string name="home_card_prayer_weather">Prayer left · Weather right</string><string name="home_card_weather_prayer">Weather left · Prayer right</string>
+    <string name="clock_content_label">Idle clock details</string><string name="clock_content_state">Idle clock: %1$s</string>
+    <string name="clock_content_time_date">Time and date</string><string name="clock_content_time_prayer">Time, date and next prayer</string><string name="clock_content_prayer_date">Time, next prayer and date</string>
+    <string name="clock_content_time_only">Time only</string><string name="clock_content_time_prayer_only">Time and next prayer</string>
+    <string name="clock_content_time_date_prayer">Time, date and next prayer</string>
+    <string name="clock_digits_label">Clock numerals</string><string name="clock_digits_state">Clock numerals: %1$s</string>
+    <string name="clock_digits_system">Follow device language</string><string name="clock_digits_western">English numerals (0–9)</string><string name="clock_digits_arabic">Arabic numerals (٠–٩)</string>
+    <string name="clock_format_label">Time format</string><string name="clock_format_state">Time format: %1$s</string>
+    <string name="clock_format_system">Follow device setting</string><string name="clock_format_12">12-hour</string><string name="clock_format_24">24-hour</string>
+    <string name="clock_brightness_label">Clock brightness</string><string name="clock_brightness_state">Clock brightness: %1$d%%</string>
+    <string name="clock_next_prayer">Next prayer · %1$s in %2$s</string><string name="clock_fajr_tomorrow">Next prayer · Fajr tomorrow %1$s</string>
+    <string name="prayer_name_fajr">Fajr</string><string name="prayer_name_dhuhr">Dhuhr</string><string name="prayer_name_asr">Asr</string><string name="prayer_name_maghrib">Maghrib</string><string name="prayer_name_isha">Isha</string>
+    <string name="dock_apps_settings">Choose and arrange dock apps</string><string name="performance_state">Reduced motion: %1$s</string><string name="performance_label">TV performance</string>
+    <string name="backup_export">Back up launcher settings…</string><string name="backup_import">Restore launcher settings…</string>
+    <string name="backup_export_done">Backup saved</string><string name="backup_import_done">Settings restored</string><string name="backup_failed">Could not read or write this backup</string>
+    <string name="backup_wallpaper_too_large">Selected wallpaper exceeds the 8 MB backup limit</string>
+    <string name="weather_tomorrow">Tomorrow %1$s° · %2$s° · %3$s</string><string name="weather_last_updated">Updated %1$s</string>
+    <string name="weather_refresh">Refresh weather</string><string name="weather_refreshing">Refreshing…</string>
+    <string name="weather_panel_stale">%1$s · old data</string>
 </resources>

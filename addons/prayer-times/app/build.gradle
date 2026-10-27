@@ -10,8 +10,19 @@ android {
         applicationId 'com.majnioui.tv.prayer'
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode providers.gradleProperty('releaseVersionCode').getOrElse('1').toInteger()
+        versionName providers.gradleProperty('releaseVersionName').getOrElse('1.0')
+    }
+
+    if (providers.gradleProperty('releaseStoreFile').isPresent()) {
+        signingConfigs {
+            releaseKey {
+                storeFile file(providers.gradleProperty('releaseStoreFile').get())
+                storePassword providers.gradleProperty('releaseStorePassword').get()
+                keyAlias providers.gradleProperty('releaseKeyAlias').get()
+                keyPassword providers.gradleProperty('releaseKeyPassword').get()
+            }
+        }
     }
 
     buildTypes {
@@ -19,8 +30,9 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
-            // Sideloaded over ADB like the launcher: signed with the debug key.
-            signingConfig signingConfigs.debug
+            // Local builds use the development key; tagged releases can use the shared private key.
+            signingConfig providers.gradleProperty('releaseStoreFile').isPresent()
+                    ? signingConfigs.releaseKey : signingConfigs.debug
         }
     }
 

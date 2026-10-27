@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="location_choose">Set location</string>
+    <string name="location_setup_title">Prayer and weather location</string>
+    <string name="location_name_label">City or place name</string>
+    <string name="location_latitude_label">Latitude</string>
+    <string name="location_longitude_label">Longitude</string>
+    <string name="location_method_label">Prayer calculation method</string>
+    <string name="location_invalid">Enter a place name and valid latitude and longitude.</string>
+    <string name="location_saved">Location saved. Refreshing prayer times and weather…</string>
+    <string-array name="calculation_method_names">
+        <item>Muslim World League</item><item>ISNA</item><item>Egyptian General Authority</item>
+        <item>Umm Al-Qura University, Makkah</item><item>Karachi</item><item>Turkey (Diyanet)</item>
+    </string-array>
+    <integer-array name="calculation_method_ids"><item>3</item><item>2</item><item>5</item><item>4</item><item>1</item><item>13</item></integer-array>
+    <string name="prayer_loading">Loading today’s prayer times…</string>
+    <string name="prayer_unexpected">Could not read the prayer schedule.</string>
+    <string name="prayer_next_in">%1$s in %2$s</string>
+    <string name="prayer_fajr_tomorrow">Fajr tomorrow</string>
+    <string name="prayer_updated">Updated %1$s · %2$s</string>
+    <string name="off">Off</string>
+    <string name="prayer_alert_label">Prayer reminder</string>
+    <string name="prayer_alert_state">Prayer reminder: %1$s</string>
+    <string name="prayer_alert_before">%1$d minutes before prayer</string>
+    <string name="prayer_alert_10">10 minutes before</string>
+    <string name="prayer_alert_15">15 minutes before</string>
+    <string name="prayer_alert_30">30 minutes before</string>
+    <string name="prayer_alert_notification_title">Prayer soon</string>
+    <string name="prayer_alert_notification_text">%1$s begins in %2$d minutes</string>
+    <string name="prayer_alert_permission">Allow notifications in Android settings to receive prayer reminders.</string>
+</resources>

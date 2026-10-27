@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">محدّث DigitalTV</string>
+    <string name="title">تحديث التطبيقات</string>
+    <string name="intro">تحقّق من أحدث إصدار للمشغّل في مستودع GitHub عام.</string>
+    <string name="owner_hint">حساب GitHub أو المؤسسة</string>
+    <string name="repository_hint">اسم المستودع</string>
+    <string name="daily_check">أبلغني بالإصدارات الجديدة مرة يوميًا</string>
+    <string name="test_url_hint">رابط الإصدار للاختبار المحلي (نسخة التطوير فقط)</string>
+    <string name="check_updates">البحث عن تحديث</string>
+    <string name="install_update">تنزيل وتثبيت</string>
+    <string name="status_ready">أدخل حساب GitHub واسم المستودع ثم ابدأ البحث.</string>
+    <string name="status_checking">جارٍ التحقق من أحدث إصدار…</string>
+    <string name="status_downloading">جارٍ تنزيل التحديث والتحقق منه…</string>
+    <string name="status_current">التطبيق محدّث (%1$s).</string>
+    <string name="status_available">الإصدار %1$s جاهز للتثبيت. الإصدار الحالي: %2$s.</string>
+    <string name="status_invalid_repo">أدخل اسم حساب ومستودع GitHub صالحين.</string>
+    <string name="status_not_found">تعذّر العثور على الإصدار أو ملف معلومات التحديث.</string>
+    <string name="status_failed">تعذّر التحقق من التحديثات: %1$s</string>
+    <string name="status_verified">تم التحقق من التحديث. سيطلب Android تأكيد التثبيت.</string>
+    <string name="status_allow_install">اسمح لهذا المحدّث بتثبيت التطبيقات من إعدادات Android، ثم ارجع وحاول مجددًا.</string>
+    <string name="not_installed">غير مثبّت</string>
+    <string name="notification_title">يتوفر تحديث لـ DigitalTV</string>
+    <string name="notification_text">الإصدار %1$s جاهز. افتح المحدّث لمراجعته وتثبيته.</string>
+    <string name="notification_channel">تحديثات التطبيقات</string>
+    <string name="install_note">سيعرض Android تأكيد التثبيت. يتحقق التطبيق من بصمة SHA-256، ويجب أن يكون APK موقّعًا بالمفتاح نفسه للتطبيق المثبّت.</string>
+</resources>

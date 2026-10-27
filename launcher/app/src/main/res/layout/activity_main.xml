@@ -94,6 +94,102 @@
             android:letterSpacing="0.12" />
     </LinearLayout>
 
+    <!-- Home prayer countdown, backed by the launcher's local daily cache. -->
+    <LinearLayout
+        android:id="@+id/prayerPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:layout_marginEnd="60dp"
+        android:layout_marginTop="158dp"
+        android:background="@drawable/prayer_panel_background"
+        android:orientation="vertical"
+        android:gravity="right"
+        android:paddingStart="20dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="15dp"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/prayerKicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textColor="#B3FFFFFF"
+            android:textSize="12sp"
+            android:fontFamily="@string/font_medium"
+            android:letterSpacing="0.16" />
+
+        <TextView
+            android:id="@+id/prayerHeadline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:singleLine="true"
+            android:textColor="#FFFFFFFF"
+            android:textSize="28sp"
+            android:fontFamily="@string/font_light"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/prayerSessions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:singleLine="true"
+            android:textColor="#99FFFFFF"
+            android:textSize="12sp"
+            android:fontFamily="@string/font_medium" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/weatherPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|left"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="158dp"
+        android:background="@drawable/weather_panel_background"
+        android:orientation="vertical"
+        android:gravity="left"
+        android:paddingStart="24dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="15dp"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="gone">
+        <TextView android:id="@+id/weatherKicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:singleLine="true" android:textColor="#B3FFFFFF" android:textSize="12sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.16" />
+        <LinearLayout android:id="@+id/weatherNowRow" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:id="@+id/weatherIcon" android:layout_width="38dp" android:layout_height="38dp"
+                android:layout_marginEnd="12dp" android:contentDescription="@null" />
+            <TextView android:id="@+id/weatherHeadline" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:singleLine="true" android:textColor="#FFFFFFFF" android:textSize="25sp"
+                android:fontFamily="@string/font_light" android:includeFontPadding="false" />
+        </LinearLayout>
+        <TextView android:id="@+id/weatherSessions" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:singleLine="true" android:textColor="#99FFFFFF"
+            android:textSize="12sp" android:fontFamily="@string/font_medium" />
+        <TextView android:id="@+id/weatherTomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="5dp" android:singleLine="true" android:textColor="#99FFFFFF"
+            android:textSize="12sp" android:fontFamily="@string/font_medium" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/weatherUpdated" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:singleLine="true" android:textColor="#66FFFFFF" android:textSize="10sp" />
+            <TextView android:id="@+id/weatherRefresh" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:minWidth="48dp" android:minHeight="40dp" android:paddingStart="8dp" android:paddingEnd="8dp"
+                android:gravity="center" android:focusable="true" android:clickable="true" android:text="↻"
+                android:textColor="#FFFFFFFF" android:textSize="20sp" android:contentDescription="@string/weather_refresh" />
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the
          dock stay readable over the artwork. -->
     <View

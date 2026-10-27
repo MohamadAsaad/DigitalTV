@@ -11,6 +11,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.database.Cursor;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
@@ -119,7 +121,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String liveTvPkg;
     /** Launcher settings' change count this Home was built with (see onResume). */
     private long settingsRevision;
-    /** Idle time on Home before ClockActivity; 0 is off (config.xml, home_idle_clock_minutes). */
+    /** Idle time on Home before ClockActivity; 0 is off. */
     private long idleClockMs;
     private final Runnable showIdleClock = () -> startActivity(new Intent(this, ClockActivity.class));
     private String liveTvAction;
@@ -193,6 +195,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    private View prayerPanel;
+    private View weatherPanel;
+    private TextView prayerKicker, prayerHeadline, prayerSessions;
+    private boolean prayerCardEnabled;
+    private boolean weatherCardEnabled;
+    private boolean prayerObserverRegistered;
+    private static final Uri PRAYER_URI = PrayerTimesRepository.CONTENT_URI;
+    private static final String[] PRAYER_NAMES = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
+    private final ContentObserver prayerObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+        @Override public void onChange(boolean selfChange) { updatePrayerCountdown(); }
+    };
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     /** config.xml inputs_connected_only: the Inputs menu lists only connected inputs, the rest behind "More inputs". */
@@ -374,6 +387,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateRace();
+            updatePrayerCountdown();
             // The pill follows the network callbacks and each return to Home; only the diya's flame follows the
             // signal level, so only it needs this minute's binder calls (about 7 ms on the UI thread).
             if (festive) updateWifiLabel();
@@ -412,7 +426,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         festival = cfg.festival;
         festive = festival.active(LocalDate.now());
         liveTvPkg = cfg.liveTvPackage;
-        idleClockMs = cfg.homeIdleClockMinutes * MINUTE_MS;
+        idleClockMs = cfg.homeIdleClockSeconds * 1_000L;
         bootToLiveTv = cfg.bootToLiveTv;
         openOnStartChoice = cfg.openOnStartChoice;
         liveTvAction = cfg.liveTvAction;
@@ -496,6 +510,30 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
+        prayerPanel = findViewById(R.id.prayerPanel);
+        prayerKicker = findViewById(R.id.prayerKicker);
+        prayerHeadline = findViewById(R.id.prayerHeadline);
+        prayerSessions = findViewById(R.id.prayerSessions);
+        weatherPanel = findViewById(R.id.weatherPanel);
+        weatherCardEnabled = getResources().getBoolean(R.bool.weather_card);
+        if (weatherPanel != null && !weatherCardEnabled) weatherPanel.setVisibility(View.GONE);
+        View weatherRefresh = findViewById(R.id.weatherRefresh);
+        if (weatherRefresh != null) weatherRefresh.setOnClickListener(v -> {
+            try {
+                getContentResolver().call(PRAYER_URI, "refresh_weather", null, null);
+                ((TextView) findViewById(R.id.weatherUpdated)).setText(R.string.weather_refreshing);
+            } catch (Exception e) {
+                ((TextView) findViewById(R.id.weatherUpdated)).setText(R.string.weather_unavailable);
+            }
+        });
+        root.post(this::positionHomeCards);
+        prayerCardEnabled = getResources().getBoolean(R.bool.prayer_countdown_card);
+        if (prayerPanel != null && !prayerCardEnabled) prayerPanel.setVisibility(View.GONE);
+        if (weatherCardEnabled && weatherPanel != null) {
+            weatherPanel.setVisibility(View.VISIBLE);
+            ((TextView) findViewById(R.id.weatherKicker)).setText(R.string.weather_panel_title);
+            ((TextView) findViewById(R.id.weatherHeadline)).setText(R.string.weather_loading);
+        }
         showStats = cfg.showStats;
         inputsConnectedOnly = cfg.inputsConnectedOnly;
         shamsi = cfg.shamsiDate;
@@ -972,8 +1010,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 break;
         }
         if (openLiveTvAfterBoot()) return;
+        if ((prayerCardEnabled || weatherCardEnabled) && !prayerObserverRegistered) {
+            getContentResolver().registerContentObserver(PRAYER_URI, false, prayerObserver);
+            prayerObserverRegistered = true;
+        }
         updateGreeting();
         updateRace();
+        updatePrayerCountdown();
         // The network and Inputs pills keep their state while Home is in the background, and callbacks update them
         // when the network or the inputs change, so this refresh only catches anything missed. Its binder calls
         // (about 7 ms on a TCL C755, most of it WifiManager.getConnectionInfo) would hold up the first frame back
@@ -1011,9 +1054,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK
-                && data != null && data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
-            getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true);
+        if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK && data != null
+                && (data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)
+                || data.getBooleanExtra(LauncherSettingsActivity.EXTRA_DOCK_EDIT, false))) {
+            getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER,
+                    data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false));
+            getIntent().putExtra(LauncherSettingsActivity.EXTRA_DOCK_EDIT,
+                    data.getBooleanExtra(LauncherSettingsActivity.EXTRA_DOCK_EDIT, false));
             // The old activity must not consume the pending action, or rebuild a second time in onResume.
             settingsRecreationPending = true;
             settingsRevision = settingsRevision();
@@ -1022,10 +1069,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void startPendingSettingsReorder() {
-        if (settingsRecreationPending || !tilesReady || !hasWindowFocus() || isFinishing()
-                || !getIntent().getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) return;
-        getIntent().removeExtra(LauncherSettingsActivity.EXTRA_REORDER);
-        toggleReorder();
+        if (settingsRecreationPending || !tilesReady || !hasWindowFocus() || isFinishing()) return;
+        if (getIntent().getBooleanExtra(LauncherSettingsActivity.EXTRA_DOCK_EDIT, false)) {
+            getIntent().removeExtra(LauncherSettingsActivity.EXTRA_DOCK_EDIT);
+            startDockEdit();
+        } else if (getIntent().getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
+            getIntent().removeExtra(LauncherSettingsActivity.EXTRA_REORDER); toggleReorder();
+        }
     }
 
     /** Rebuilds the tiles (and the module cards), then puts focus back where it was. */
@@ -1162,6 +1212,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.animate().cancel();
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
+        if (prayerObserverRegistered) {
+            getContentResolver().unregisterContentObserver(prayerObserver);
+            prayerObserverRegistered = false;
+        }
         stopStats();
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
@@ -1179,6 +1233,197 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(clockCheck);
         stopped = true;
         tileRefresh.onStop();
+    }
+
+    private void updatePrayerCountdown() {
+        if ((!prayerCardEnabled || prayerPanel == null) && (!weatherCardEnabled || weatherPanel == null)) return;
+        if (prayerCardEnabled && prayerKicker != null) prayerKicker.setText(R.string.prayer_panel_title);
+        try (Cursor cursor = getContentResolver().query(PRAYER_URI, null, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst() && weatherCardEnabled && weatherPanel != null) {
+                boolean locationReady = isPrayerLocationConfigured(cursor);
+                weatherPanel.setVisibility(View.VISIBLE);
+                TextView kicker = findViewById(R.id.weatherKicker);
+                TextView headline = findViewById(R.id.weatherHeadline);
+                TextView sessions = findViewById(R.id.weatherSessions);
+                TextView tomorrow = findViewById(R.id.weatherTomorrow);
+                TextView updated = findViewById(R.id.weatherUpdated);
+                kicker.setText(R.string.weather_panel_title);
+                String date = cursorString(cursor, "weather_date");
+                String temp = cursorString(cursor, "weather_temp");
+                android.widget.ImageView icon = findViewById(R.id.weatherIcon);
+                if (!temp.isEmpty()) {
+                    int code;
+                    try { code = Integer.parseInt(cursorString(cursor, "weather_code")); }
+                    catch (NumberFormatException ignored) { code = -1; }
+                    String condition = weatherCondition(code);
+                    icon.setImageResource(weatherIcon(code));
+                    headline.setText(getString(R.string.weather_now, temp, condition));
+                    sessions.setText(getString(R.string.weather_today,
+                            cursorString(cursor, "weather_max"), cursorString(cursor, "weather_min"),
+                            cursorString(cursor, "weather_rain")));
+                    String tomorrowCodeText = cursorString(cursor, "weather_tomorrow_code");
+                    int tomorrowCode = -1;
+                    try { tomorrowCode = Integer.parseInt(tomorrowCodeText); } catch (NumberFormatException ignored) { }
+                    tomorrow.setText(getString(R.string.weather_tomorrow, cursorString(cursor, "weather_tomorrow_max"),
+                            cursorString(cursor, "weather_tomorrow_min"), weatherCondition(tomorrowCode)));
+                    String updatedMillis = cursorString(cursor, "weather_updated");
+                    try {
+                        long stamp = Long.parseLong(updatedMillis);
+                        updated.setText(getString(R.string.weather_last_updated,
+                                new java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(new java.util.Date(stamp))));
+                    } catch (NumberFormatException e) { updated.setText(""); }
+                    if ("1".equals(cursorString(cursor, "weather_error")) || !date.equals(java.time.LocalDate.now().toString()))
+                        kicker.setText(getString(R.string.weather_panel_stale, getString(R.string.weather_panel_title)));
+                } else {
+                    icon.setImageResource(R.drawable.weather_cloud);
+                    headline.setText(!locationReady ? R.string.weather_setup_home
+                            : "1".equals(cursorString(cursor, "weather_error"))
+                            ? R.string.weather_unavailable : R.string.weather_loading);
+                    sessions.setText("");
+                    tomorrow.setText("");
+                    updated.setText("");
+                }
+                positionHomeCards();
+            }
+            if (!prayerCardEnabled || prayerPanel == null) return;
+            prayerPanel.setVisibility(View.VISIBLE);
+            if (cursor == null || !cursor.moveToFirst()) {
+                prayerHeadline.setText(R.string.prayer_loading);
+                prayerSessions.setText("");
+                return;
+            }
+            if (!isPrayerLocationConfigured(cursor)) {
+                prayerHeadline.setText(R.string.prayer_setup_home);
+                prayerSessions.setText("");
+                return;
+            }
+            String[] columns = {"date", "fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha", "tomorrow_fajr"};
+            Map<String, String> values = new HashMap<>();
+            for (String column : columns) {
+                int index = cursor.getColumnIndex(column);
+                if (index >= 0) values.put(column, cursor.getString(index));
+            }
+            String today = java.time.LocalDate.now().toString();
+            if (!today.equals(values.get("date"))) {
+                prayerHeadline.setText(R.string.prayer_loading);
+                prayerSessions.setText("");
+                return;
+            }
+            Calendar now = Calendar.getInstance();
+            int nowMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
+            String[] keys = {"fajr", "dhuhr", "asr", "maghrib", "isha"};
+            int nextIndex = -1;
+            int nextMinutes = -1;
+            for (int i = 0; i < keys.length; i++) {
+                String time = values.get(keys[i]);
+                int minute = parsePrayerMinute(time);
+                if (minute > nowMinutes) { nextIndex = i; nextMinutes = minute; break; }
+            }
+            String timeLabel;
+            int remaining;
+            if (nextIndex >= 0) {
+                timeLabel = values.get(keys[nextIndex]);
+                remaining = nextMinutes - nowMinutes;
+                String remainingLabel = remaining >= 60
+                        ? getString(R.string.prayer_countdown_hours, remaining / 60, remaining % 60)
+                        : getString(R.string.prayer_countdown_minutes, remaining);
+                prayerHeadline.setText(getString(R.string.prayer_countdown, PRAYER_NAMES[nextIndex], remainingLabel));
+            } else {
+                timeLabel = values.get("tomorrow_fajr");
+                int fajr = parsePrayerMinute(timeLabel);
+                if (fajr < 0) {
+                    prayerHeadline.setText(R.string.prayer_unavailable);
+                    prayerSessions.setText("");
+                    return;
+                }
+                nextIndex = 0;
+                remaining = 24 * 60 - nowMinutes + fajr;
+                prayerHeadline.setText(getString(R.string.prayer_countdown, PRAYER_NAMES[nextIndex],
+                        getString(R.string.prayer_countdown_hours, remaining / 60, remaining % 60)));
+            }
+            prayerSessions.setText(getString(R.string.prayer_today_times, timeLabel));
+            positionHomeCards();
+        } catch (Exception e) {
+            if (prayerHeadline != null) prayerHeadline.setText(R.string.prayer_unavailable);
+            if (prayerSessions != null) prayerSessions.setText("");
+        }
+    }
+
+    private static String cursorString(Cursor cursor, String column) {
+        int index = cursor.getColumnIndex(column);
+        return index < 0 || cursor.isNull(index) ? "" : cursor.getString(index);
+    }
+
+    private boolean isPrayerLocationConfigured(Cursor cursor) {
+        String place = cursorString(cursor, "place");
+        return !place.isEmpty() && !place.equals(getString(R.string.prayer_app_location_choose));
+    }
+
+    private String weatherCondition(int code) {
+        int id = code == 0 ? R.string.weather_clear : code == 1 || code == 2 ? R.string.weather_partly_cloudy
+                : code == 3 ? R.string.weather_cloudy : code == 45 || code == 48 ? R.string.weather_fog
+                : code >= 51 && code <= 57 ? R.string.weather_drizzle : code >= 61 && code <= 67 ? R.string.weather_rain
+                : code >= 71 && code <= 77 ? R.string.weather_snow : code >= 80 && code <= 82 ? R.string.weather_showers
+                : code == 85 || code == 86 ? R.string.weather_snow : code >= 95 ? R.string.weather_thunderstorm
+                : R.string.weather_unknown;
+        return getString(id);
+    }
+
+    private int weatherIcon(int code) {
+        if (code == 0) return R.drawable.weather_sun;
+        if (code == 1 || code == 2) return R.drawable.weather_partly;
+        if (code == 3) return R.drawable.weather_cloud;
+        if (code == 45 || code == 48) return R.drawable.weather_fog;
+        if (code >= 71 && code <= 77 || code == 85 || code == 86) return R.drawable.weather_snow;
+        if (code >= 95) return R.drawable.weather_storm;
+        return R.drawable.weather_rain;
+    }
+
+    private void positionHomeCards() {
+        if (root == null || root.getWidth() == 0) return;
+        boolean prayerLeft = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).getInt("home_card_order", 0) == 0;
+        int top = (int) ((racePanel != null && racePanel.getVisibility() == View.VISIBLE ? 286 : 158) * density);
+        int inset = (int) (60 * density), gap = (int) (20 * density);
+        boolean both = prayerPanel != null && weatherPanel != null
+                && prayerPanel.getVisibility() == View.VISIBLE && weatherPanel.getVisibility() == View.VISIBLE;
+        int width = Math.max(0, root.getWidth() - inset * 2 - (both ? gap : 0));
+        if (both) width /= 2;
+        placeHomeCard(prayerPanel, prayerLeft, top, width);
+        placeHomeCard(weatherPanel, !prayerLeft, top, width);
+        int textWidth = Math.max(0, width - (int) (52 * density));
+        setCardTextWidth(prayerPanel, textWidth, R.id.prayerKicker, R.id.prayerHeadline, R.id.prayerSessions);
+        setCardTextWidth(weatherPanel, textWidth, R.id.weatherKicker, R.id.weatherSessions, R.id.weatherTomorrow,
+                R.id.weatherUpdated);
+        setCardTextWidth(weatherPanel, Math.max(0, textWidth - (int) (48 * density)), R.id.weatherHeadline);
+    }
+
+    private void setCardTextWidth(View card, int width, int... ids) {
+        if (card == null) return;
+        for (int id : ids) {
+            TextView text = card.findViewById(id);
+            if (text != null) {
+                text.setMaxWidth(width);
+                text.setEllipsize(TextUtils.TruncateAt.END);
+            }
+        }
+    }
+
+    private void placeHomeCard(View card, boolean left, int top, int width) {
+        if (card == null || !(card.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
+        int gravity = Gravity.TOP | (left ? Gravity.LEFT : Gravity.RIGHT);
+        int inset = (int) (60 * density);
+        if (lp.gravity != gravity || lp.topMargin != top || lp.leftMargin != inset || lp.rightMargin != inset
+                || lp.width != width) {
+            lp.gravity = gravity; lp.topMargin = top; lp.leftMargin = inset; lp.rightMargin = inset; lp.width = width;
+            card.setLayoutParams(lp);
+        }
+    }
+
+    private static int parsePrayerMinute(String time) {
+        if (time == null || time.length() < 5) return -1;
+        try { return Integer.parseInt(time.substring(0, 2)) * 60 + Integer.parseInt(time.substring(3, 5)); }
+        catch (NumberFormatException e) { return -1; }
     }
 
     /**
@@ -2546,6 +2791,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         RaceWeekend.State s = raceCalendar.isEmpty() ? null : RaceWeekend.at(raceCalendar, java.time.Instant.now());
         if (s == null) {
             racePanel.setVisibility(View.GONE);
+            positionHomeCards();
             return;
         }
         RaceWeekend.Race race = s.race;
@@ -2586,6 +2832,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         raceSessions.setText(row);
         racePanel.setVisibility(View.VISIBLE);
+        positionHomeCards();
     }
 
     private void refreshPillsAfterNextDraw() {
@@ -3351,6 +3598,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
             else Toast.makeText(this, R.string.library_save_failed, Toast.LENGTH_LONG).show();
         });
+        try {
+            android.content.pm.ApplicationInfo application = getPackageManager().getApplicationInfo(pkg, 0);
+            boolean systemApp = (application.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0;
+            Intent uninstall = new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + pkg));
+            if (!systemApp && getPackageManager().resolveActivity(uninstall, 0) != null)
+                addSettingsMenuRow(rows, popup, R.string.tile_uninstall_app, () -> open(uninstall));
+        } catch (PackageManager.NameNotFoundException ignored) { }
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(this, pkg);
         if (info != null) addSettingsMenuRow(rows, popup, R.string.library_app_info, () -> open(info));

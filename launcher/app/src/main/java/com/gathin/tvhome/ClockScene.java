@@ -15,6 +15,9 @@ import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.database.Cursor;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -24,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Date;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
 
 /**
  * The clock screensaver's scene (layout dream_clock): the thin clock and date on black over a slow ambient
@@ -61,6 +67,12 @@ final class ClockScene {
     private String order;
     private Map<String, Set<String>> moods;
     private String latitude, longitude;
+    private TextView prayerDetails;
+    private boolean showPrayer;
+    private TextView clockTime, clockAmPm, clockDate;
+    private int clockDigitStyle;
+    private int clockFormat;
+    private float clockBrightness = 1f;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -68,6 +80,8 @@ final class ClockScene {
             moveClock();
             shiftGlow();
             advanceWallpaper();
+            updateClockFields();
+            updatePrayerDetails();
             handler.postDelayed(this, MOVE_MS);
         }
     };
@@ -110,6 +124,34 @@ final class ClockScene {
      * Call before start(), which starts the decode (again after a stop() that dropped an unfinished one).
      */
     void useHomeWallpaper(Context ctx) {
+        android.content.SharedPreferences preferences = ctx.getSharedPreferences(Config.SETTINGS_NAME, Context.MODE_PRIVATE);
+        showPrayer = preferences.getBoolean("clock_show_prayer", false);
+        boolean showDate = preferences.getBoolean("clock_show_date", true);
+        clockDigitStyle = preferences.getInt("clock_digit_style", 0);
+        clockFormat = preferences.getInt("clock_format", 0);
+        clockBrightness = Math.max(30, Math.min(100, preferences.getInt("clock_brightness", 100))) / 100f;
+        clockTime = content.findViewById(R.id.dreamTime);
+        clockAmPm = content.findViewById(R.id.dreamAmPm);
+        clockDate = content.findViewById(R.id.dreamDate);
+        prayerDetails = content.findViewById(R.id.dreamPrayer);
+        clockTime.setAlpha(clockBrightness);
+        clockAmPm.setAlpha(clockBrightness);
+        clockDate.setAlpha(clockBrightness);
+        prayerDetails.setAlpha(clockBrightness);
+        clockDate.setVisibility(showDate ? View.VISIBLE : View.GONE);
+        prayerDetails.setVisibility(showPrayer ? View.VISIBLE : View.GONE);
+        int contentOrder = preferences.getInt("clock_content_order", 0);
+        LinearLayout details = (LinearLayout) content;
+        details.removeView(clockDate); details.removeView(prayerDetails);
+        if (contentOrder == 1) {
+            details.addView(prayerDetails);
+            details.addView(clockDate);
+        } else {
+            details.addView(clockDate);
+            details.addView(prayerDetails);
+        }
+        updateClockFields();
+        if (showPrayer) updatePrayerDetails();
         Config cfg;
         try {
             cfg = Config.load(ctx);
@@ -146,6 +188,67 @@ final class ClockScene {
         }
         wallpaperShade = (cfg.clockWallpaperDim * 255 / 100) << 24;
         wallpaperRes = ctx.getResources();
+    }
+
+    private void updateClockFields() {
+        if (clockTime == null) return;
+        try {
+            Locale locale = Locale.getDefault();
+            boolean use24 = clockFormat == 2 || (clockFormat == 0
+                    && android.text.format.DateFormat.is24HourFormat(content.getContext()));
+            Date now = new Date();
+            String time = new SimpleDateFormat(use24 ? "HH:mm" : "h:mm", locale).format(now);
+            String amPm = use24 ? "" : new SimpleDateFormat("a", locale).format(now);
+            String date = new SimpleDateFormat(content.getResources().getString(R.string.date_format), locale).format(now);
+            clockTime.setText(shapeDigits(time));
+            clockAmPm.setText(shapeDigits(amPm));
+            if (clockDate != null) clockDate.setText(shapeDigits(date));
+            clockAmPm.setVisibility(amPm.isEmpty() ? View.GONE : View.VISIBLE);
+            clockTime.setContentDescription(time + (amPm.isEmpty() ? "" : " " + amPm));
+        } catch (Exception ignored) { }
+    }
+
+    private String shapeDigits(String value) {
+        if (clockDigitStyle == 0) return value;
+        StringBuilder shaped = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (clockDigitStyle == 1 && c >= '\u0660' && c <= '\u0669') c = (char) ('0' + c - '\u0660');
+            else if (clockDigitStyle == 1 && c >= '\u06F0' && c <= '\u06F9') c = (char) ('0' + c - '\u06F0');
+            else if (clockDigitStyle == 2 && c >= '0' && c <= '9') c = (char) ('\u0660' + c - '0');
+            shaped.append(c);
+        }
+        return shaped.toString();
+    }
+
+    private void updatePrayerDetails() {
+        if (!showPrayer || prayerDetails == null) return;
+        try (Cursor c = content.getContext().getContentResolver().query(
+                PrayerTimesRepository.CONTENT_URI, null, null, null, null)) {
+            if (c == null || !c.moveToFirst()) { prayerDetails.setText(""); return; }
+            String[] names = {content.getResources().getString(R.string.prayer_name_fajr),
+                    content.getResources().getString(R.string.prayer_name_dhuhr), content.getResources().getString(R.string.prayer_name_asr),
+                    content.getResources().getString(R.string.prayer_name_maghrib), content.getResources().getString(R.string.prayer_name_isha)};
+            String[] columns = {"fajr", "dhuhr", "asr", "maghrib", "isha"};
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            int current = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE);
+            for (int i = 0; i < columns.length; i++) {
+                int column = c.getColumnIndex(columns[i]);
+                if (column < 0) continue;
+                String time = c.getString(column);
+                if (time == null || time.length() < 5) continue;
+                int minute = Integer.parseInt(time.substring(0, 2)) * 60 + Integer.parseInt(time.substring(3, 5));
+                if (minute > current) {
+                    int remaining = minute - current;
+                    String left = remaining >= 60 ? remaining / 60 + ":" + String.format(java.util.Locale.ROOT, "%02d", remaining % 60)
+                            : remaining + " د";
+                    prayerDetails.setText(content.getResources().getString(R.string.clock_next_prayer, names[i], left));
+                    return;
+                }
+            }
+            int index = c.getColumnIndex("tomorrow_fajr");
+            if (index >= 0) prayerDetails.setText(content.getResources().getString(R.string.clock_fajr_tomorrow, c.getString(index)));
+        } catch (Exception ignored) { prayerDetails.setText(""); }
     }
 
     private void loadWallpaper() {

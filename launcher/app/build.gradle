@@ -11,8 +11,19 @@ android {
         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')
         minSdk 26
         targetSdk 34
-        versionCode 9
-        versionName '3.0'
+        versionCode providers.gradleProperty('releaseVersionCode').getOrElse('9').toInteger()
+        versionName providers.gradleProperty('releaseVersionName').getOrElse('3.0')
+    }
+
+    if (providers.gradleProperty('releaseStoreFile').isPresent()) {
+        signingConfigs {
+            releaseKey {
+                storeFile file(providers.gradleProperty('releaseStoreFile').get())
+                storePassword providers.gradleProperty('releaseStorePassword').get()
+                keyAlias providers.gradleProperty('releaseKeyAlias').get()
+                keyPassword providers.gradleProperty('releaseKeyPassword').get()
+            }
+        }
     }
 
     buildTypes {
@@ -21,8 +32,9 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Sideloaded over ADB, never published: sign with the debug key so it installs over a debug build.
-            signingConfig signingConfigs.debug
+            // Local builds keep the development key; tagged public releases may supply a private stable key.
+            signingConfig providers.gradleProperty('releaseStoreFile').isPresent()
+                    ? signingConfigs.releaseKey : signingConfigs.debug
         }
     }
 

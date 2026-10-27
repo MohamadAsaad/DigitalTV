@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.gathin.tvhome.updater'
+    compileSdk 34
+    buildFeatures { buildConfig true }
+
+    defaultConfig {
+        applicationId 'com.gathin.tvhome.updater'
+        minSdk 26
+        targetSdk 34
+        versionCode providers.gradleProperty('releaseVersionCode').getOrElse('1').toInteger()
+        versionName providers.gradleProperty('releaseVersionName').getOrElse('1.0')
+    }
+
+    if (providers.gradleProperty('releaseStoreFile').isPresent()) {
+        signingConfigs {
+            releaseKey {
+                storeFile file(providers.gradleProperty('releaseStoreFile').get())
+                storePassword providers.gradleProperty('releaseStorePassword').get()
+                keyAlias providers.gradleProperty('releaseKeyAlias').get()
+                keyPassword providers.gradleProperty('releaseKeyPassword').get()
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig providers.gradleProperty('releaseStoreFile').isPresent()
+                    ? signingConfigs.releaseKey : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    testImplementation 'org.json:json:20240303'
+    testImplementation 'junit:junit:4.13.2'
+}

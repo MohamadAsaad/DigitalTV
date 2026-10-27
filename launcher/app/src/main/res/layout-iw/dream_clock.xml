@@ -28,25 +28,21 @@
             android:layoutDirection="ltr"
             android:baselineAligned="true">
 
-            <TextClock
+            <TextView
                 android:id="@+id/dreamAmPm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
-                android:format12Hour="a"
-                android:format24Hour=""
                 android:textColor="#99FFFFFF"
                 android:textSize="22sp"
                 android:fontFamily="@string/font_medium"
                 android:letterSpacing="0.08"
                 android:textAllCaps="true" />
 
-            <TextClock
-                android:id="@+id/dreamClock"
+            <TextView
+                android:id="@+id/dreamTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:format12Hour="h:mm"
-                android:format24Hour="HH:mm"
                 android:textColor="#E6FFFFFF"
                 android:textSize="120sp"
                 android:fontFamily="@string/font_extralight"
@@ -54,15 +50,13 @@
                 android:includeFontPadding="false" />
         </LinearLayout>
 
-        <TextClock
+        <TextView
             android:id="@+id/dreamDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textDirection="rtl"
             android:gravity="right"
-            android:format12Hour="@string/date_format"
-            android:format24Hour="@string/date_format"
             android:textColor="#8CFFFFFF"
             android:textSize="18sp"
             android:fontFamily="@string/font_regular"

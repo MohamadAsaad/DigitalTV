@@ -93,6 +93,25 @@
             style="@style/SettingsRow"
             android:layout_marginTop="28dp" />
 
+        <TextView android:id="@+id/wallpaperDimChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/wallpaperRotationChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeCardOrderChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/prayerSettingsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" android:text="@string/prayer_settings_label" />
+        <TextView android:id="@+id/clockContentChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/clockDigitsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/clockFormatChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/clockBrightnessChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/dockAppsChoice" style="@style/SettingsRow" android:layout_marginTop="28dp" />
+
+        <TextView
+            android:id="@+id/homeIdleClockChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="18dp" />
+
+        <TextView android:id="@+id/performanceChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/backupExportChoice" style="@style/SettingsRow" android:layout_marginTop="28dp" />
+        <TextView android:id="@+id/backupImportChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
         <TextView
             android:id="@+id/animationsChoice"
             style="@style/SettingsRow"

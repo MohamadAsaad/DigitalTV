@@ -4,6 +4,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
 import android.os.Environment;
 import android.util.Log;
 
@@ -207,8 +213,8 @@ final class Config {
     final boolean appGlow;
     /** The rows fade out under the clock instead of being cut off (config.xml, fade_rows); TopFade. */
     final boolean fadeRows;
-    /** Minutes Home may sit untouched before the clock screensaver (config.xml, home_idle_clock_minutes); 0 is off. */
-    final int homeIdleClockMinutes;
+    /** Seconds Home may sit untouched before the clock screensaver; 0 is off. */
+    final int homeIdleClockSeconds;
     /** The dock band as light frosted glass like the pills (config.xml, dock_glass); false keeps the solid band. */
     final boolean dockGlass;
     /** The dock band's padding equals the gap between its tiles (config.xml, dock_even_padding); false keeps the fixed padding. */
@@ -269,7 +275,7 @@ final class Config {
                    int[] settingsKeycodes, boolean settingsKeyPanel, boolean restoreKeyServices, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
                    int wallpaperRotationMinutes, int wallpaperDim, int dockOpacity, String wallpaperOrder, boolean overlayApplied,
                    Festival festival, int[] inputKeycodes, List<String> appKeys, String stockHomeRedirect,
-                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
+                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockSeconds,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
                    Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean homeLongPressHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, boolean vpnPill, String locale, boolean powerOnHomeAlways, boolean inputsConnectedOnly) {
@@ -352,7 +358,7 @@ final class Config {
         this.ambientGlow = ambientGlow;
         this.appGlow = appGlow;
         this.fadeRows = fadeRows;
-        this.homeIdleClockMinutes = homeIdleClockMinutes;
+        this.homeIdleClockSeconds = homeIdleClockSeconds;
         this.dockGlass = dockGlass;
         this.dockEvenPadding = dockEvenPadding;
         this.dockBand = dockBand;
@@ -469,6 +475,8 @@ final class Config {
         boolean appGlow = res.getBoolean(R.bool.app_glow);
         boolean fadeRows = res.getBoolean(R.bool.fade_rows);
         int idleClockMinutes = res.getInteger(R.integer.home_idle_clock_minutes);
+        int idleClockSeconds = res.getInteger(R.integer.home_idle_clock_seconds);
+        if (idleClockSeconds < 0) idleClockSeconds = idleClockMinutes * 60;
         boolean keyFilter = res.getBoolean(R.bool.key_filter);
         boolean gamepadPassthrough = res.getBoolean(R.bool.gamepad_passthrough);
         boolean consumeVolumeKeys = res.getBoolean(R.bool.consume_volume_keys);
@@ -502,6 +510,7 @@ final class Config {
         boolean applied = false;
 
         File dir = dir(ctx);
+        ensureBuiltinWallpapers(ctx, dir);
         File file = dir != null ? new File(dir, FILE_NAME) : null;
         boolean mounted = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
         JSONObject json = readOverlay(ctx, file, mounted);
@@ -573,7 +582,9 @@ final class Config {
             ambientGlow = bool(json, "ambient_glow", ambientGlow);
             appGlow = bool(json, "app_glow", appGlow);
             fadeRows = bool(json, "fade_rows", fadeRows);
-            idleClockMinutes = integer(json, "home_idle_clock_minutes", idleClockMinutes, 0, 1440);
+            if (json.has("home_idle_clock_minutes"))
+                idleClockSeconds = integer(json, "home_idle_clock_minutes", idleClockMinutes, 0, 1440) * 60;
+            idleClockSeconds = integer(json, "home_idle_clock_seconds", idleClockSeconds, 0, 86400);
             keyFilter = bool(json, "key_filter", keyFilter);
             gamepadPassthrough = bool(json, "gamepad_passthrough", gamepadPassthrough);
             consumeVolumeKeys = bool(json, "consume_volume_keys", consumeVolumeKeys);
@@ -613,6 +624,9 @@ final class Config {
         SharedPreferences choices = ctx.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE);
         // Unmounted storage looks like a theme reset; compare only once the file is readable.
         if (mounted) syncThemeChoices(choices, dir, file);
+        reducedMotion = choices.getBoolean("reduced_motion", reducedMotion);
+        int chosenIdleSeconds = choices.getInt("home_idle_clock_seconds", -1);
+        if (chosenIdleSeconds >= 0 && chosenIdleSeconds <= 86400) idleClockSeconds = chosenIdleSeconds;
         int chosenColumns = choices.getInt("columns", columns);
         if (chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
         int chosenRows = choices.getInt(ROWS_BELOW_DOCK_KEY, rowsBelow);
@@ -625,7 +639,12 @@ final class Config {
         boolean wallpaperEnabled = json == null || bool(json, "wallpaper", true);
         if (!wallpaperEnabled) wallpaper = null;
         int rotationMinutes = json == null ? 0 : integer(json, "wallpaper_rotation_minutes", 0, 0, 1440);
+        int userRotation = choices.getInt("wallpaper_rotation_minutes", -1);
+        if (userRotation == -2) { /* follow the theme */ }
+        else if (userRotation >= 0 && userRotation <= 1440) rotationMinutes = userRotation;
         int wallpaperDim = json == null ? 0 : integer(json, "wallpaper_dim", 0, 0, 90);
+        int chosenDim = choices.getInt("wallpaper_dim", -1);
+        if (chosenDim >= 0 && chosenDim <= 90) wallpaperDim = chosenDim;
         int dockOpacity = json == null ? 100 : integer(json, "dock_opacity", 100, 30, 100);
         dockOpacity = chosenDockOpacity(choices.getInt(DOCK_OPACITY_KEY, -1), dockOpacity);
         String wallpaperOrder = json == null ? WallpaperRotation.ORDER_SHUFFLE
@@ -633,14 +652,28 @@ final class Config {
         // An unknown order must not silently change how an existing collection rotates.
         if (!WallpaperRotation.validOrder(wallpaperOrder)) wallpaperOrder = WallpaperRotation.ORDER_SHUFFLE;
         List<File> wallpapers = new ArrayList<>();
-        if (rotationMinutes > 0 && dir != null && wallpaperEnabled) {
-            wallpapers.addAll(WallpaperRotation.images(new File(dir, "wallpapers")));
+        List<File> collection = dir == null ? Collections.emptyList()
+                : WallpaperRotation.images(new File(dir, "wallpapers"));
+        if (rotationMinutes > 0 && wallpaperEnabled) {
+            wallpapers.addAll(collection);
+        } else if (userRotation == 0 && wallpaperEnabled && !collection.isEmpty()) {
+            String currentImage = ctx.getSharedPreferences("wallpaper_rotation", Context.MODE_PRIVATE).getString("image", "");
+            File fixed = WallpaperRotation.find(collection, currentImage);
+            if (fixed == null) fixed = collection.get(0);
+            wallpapers.add(fixed);
+            wallpaper = fixed;
         }
         if (wallpapers.isEmpty() && wallpaper != null) wallpapers.add(wallpaper);
         // An on-TV wallpaper pick overrides the theme: a filename from the wallpapers/
         // collection, or "none". Unset means the theme decides (off by default).
         String wallpaperChoice = choices.getString(WALLPAPER_CHOICE_KEY, null);
-        List<File> chosen = WallpaperRotation.chosen(dir == null ? Collections.emptyList()
+        if ("@device".equals(wallpaperChoice) && dir != null) {
+            File picked = new File(dir, "wallpaper-picked.jpg");
+            if (picked.isFile() && picked.length() > 0) {
+                wallpapers.clear(); wallpapers.add(picked); wallpaper = picked; wallpaperEnabled = true;
+            } else wallpaperChoice = null;
+        }
+        List<File> chosen = "@device".equals(wallpaperChoice) ? null : WallpaperRotation.chosen(dir == null ? Collections.emptyList()
                 : WallpaperRotation.images(new File(dir, "wallpapers")), wallpaper, wallpaperChoice);
         if (chosen != null) {
             wallpapers.clear();
@@ -661,11 +694,62 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, restoreKeyServices, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied, festival, inputKeycodes, appKeys, stockHomeRedirect,
                 json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
-                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding,
+                Math.max(0, idleClockSeconds), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding,
                 dockBand, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough,
                 consumeVolumeKeys, powerOnHome, homeLongPressHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly);
+    }
+
+    private static void ensureBuiltinWallpapers(Context context, File dir) {
+        if (dir == null) return;
+        File collection = new File(dir, "wallpapers");
+        if (!collection.exists() && !collection.mkdirs()) return;
+        String[] names = {"builtin-moon-lake.jpg", "builtin-dunes.jpg", "builtin-golden-coast.jpg"};
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
+            File target = new File(collection, name);
+            if (target.isFile() && target.length() > 0) continue;
+            Bitmap image = null;
+            try (FileOutputStream out = new FileOutputStream(target)) {
+                image = Bitmap.createBitmap(960, 540, Bitmap.Config.RGB_565);
+                Canvas canvas = new Canvas(image);
+                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                int[][] palettes = {{0xFF071629,0xFF315572,0xFF91A7A5},
+                        {0xFF21354D,0xFFD19A65,0xFFF5D1A0}, {0xFF1C2050,0xFFC66E61,0xFFFFD48C}};
+                paint.setShader(new LinearGradient(0, 0, 0, 540,
+                        palettes[i],
+                        null, Shader.TileMode.CLAMP));
+                canvas.drawRect(0, 0, 960, 540, paint); paint.setShader(null);
+                if (i == 0) {
+                    paint.setColor(0xFFEAF1E4); canvas.drawCircle(728, 140, 52, paint);
+                    path(canvas, paint, 0xFF172D42, new float[]{0,340,180,245,350,355,520,260,700,365,850,275,960,335,960,540,0,540});
+                    path(canvas, paint, 0xFF193D50, new float[]{0,420,210,375,390,430,590,350,780,430,960,375,960,540,0,540});
+                    paint.setColor(0xFF678A90); canvas.drawOval(235, 435, 780, 474, paint);
+                    paint.setColor(0xFF294F61); canvas.drawRect(0, 475, 960, 540, paint);
+                } else if (i == 1) {
+                    paint.setColor(0xFFFFD28A); canvas.drawCircle(750, 165, 68, paint);
+                    path(canvas, paint, 0xFF8C634B, new float[]{0,390,150,305,340,330,480,415,680,300,820,350,960,285,960,540,0,540});
+                    path(canvas, paint, 0xFF604B45, new float[]{0,455,170,385,390,435,565,375,760,450,900,390,960,405,960,540,0,540});
+                    paint.setColor(0xFFB7865D); canvas.drawOval(75, 485, 410, 520, paint);
+                } else {
+                    paint.setColor(0xFFFFE0A0); canvas.drawCircle(720, 190, 76, paint);
+                    paint.setShader(new LinearGradient(0, 270, 0, 540, 0xFF28516A, 0xFF101F36, Shader.TileMode.CLAMP));
+                    canvas.drawRect(0, 270, 960, 540, paint); paint.setShader(null);
+                    paint.setColor(0x66FFE2AE); paint.setStrokeWidth(3);
+                    for (int y=330; y<520; y+=34) canvas.drawLine(80+(y%90), y, 880-(y%110), y, paint);
+                    path(canvas, paint, 0xFF14283C, new float[]{0,420,130,370,260,415,410,385,550,430,720,390,840,420,960,375,960,540,0,540});
+                }
+                image.compress(Bitmap.CompressFormat.JPEG, 86, out);
+            } catch (IOException e) { Log.w(TAG, "Could not install built-in wallpaper " + name, e); }
+            finally { if (image != null) image.recycle(); }
+        }
+    }
+
+    private static void path(Canvas canvas, Paint paint, int color, float[] points) {
+        paint.setColor(color); Path p = new Path(); p.moveTo(points[0], points[1]);
+        for (int i = 2; i < points.length; i += 2) p.lineTo(points[i], points[i + 1]);
+        p.close(); canvas.drawPath(p, paint);
     }
 
     /**
@@ -709,11 +793,16 @@ final class Config {
             SharedPreferences.Editor editor = choices.edit();
             if (!"absent".equals(token)) editor.remove("columns").remove("animations")
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
-                    .remove(DOCK_OPACITY_KEY);
+                    .remove(DOCK_OPACITY_KEY).remove("home_idle_clock_seconds").remove("wallpaper_dim")
+                    .remove("wallpaper_rotation_minutes").remove("home_card_order").remove("clock_show_prayer")
+                    .remove("clock_show_date").remove("clock_content_order").remove("reduced_motion");
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
             choices.edit().remove("columns").remove("animations").remove("advanced_effects")
                     .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(DOCK_OPACITY_KEY)
+                    .remove("home_idle_clock_seconds")
+                    .remove("wallpaper_dim").remove("wallpaper_rotation_minutes").remove("home_card_order")
+                    .remove("clock_show_prayer").remove("clock_show_date").remove("reduced_motion")
                     .putString(THEME_SIGNATURE_KEY, signature).commit();
         }
     }

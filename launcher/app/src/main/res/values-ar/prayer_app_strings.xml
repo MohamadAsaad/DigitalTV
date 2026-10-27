@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prayer_app_location_choose">تحديد الموقع</string>
+    <string name="prayer_app_location_setup_title">موقع مواقيت الصلاة والطقس</string>
+    <string name="prayer_app_location_name_label">اسم المدينة أو المكان</string>
+    <string name="prayer_app_location_latitude_label">خط العرض</string>
+    <string name="prayer_app_location_longitude_label">خط الطول</string>
+    <string name="prayer_app_location_method_label">طريقة حساب الصلاة</string>
+    <string name="prayer_app_location_invalid">أدخل اسم المكان وخطّي عرض وطول صالحين.</string>
+    <string name="prayer_app_location_saved">تم حفظ الموقع. جارٍ تحديث الصلاة والطقس…</string>
+    <string name="prayer_app_location_privacy">تُرسل الإحداثيات إلى Aladhan للمواقيت وOpen-Meteo للطقس. لا يطلب التطبيق إذن تحديد الموقع.</string>
+    <string-array name="prayer_app_calculation_method_names">
+        <item>رابطة العالم الإسلامي</item><item>الجمعية الإسلامية لأمريكا الشمالية</item><item>الهيئة المصرية العامة للمساحة</item>
+        <item>جامعة أم القرى، مكة</item><item>كراتشي</item><item>تركيا (ديانت)</item>
+    </string-array>
+    <integer-array name="prayer_app_calculation_method_ids"><item>3</item><item>2</item><item>5</item><item>4</item><item>1</item><item>13</item></integer-array>
+    <string name="prayer_app_prayer_loading">جارٍ تحميل مواقيت اليوم…</string>
+    <string name="prayer_app_prayer_unexpected">تعذّرت قراءة جدول الصلاة.</string>
+    <string name="prayer_app_prayer_next_in">%1$s بعد %2$s</string>
+    <string name="prayer_app_prayer_fajr_tomorrow">الفجر غدًا</string>
+    <string name="prayer_app_prayer_updated">آخر تحديث %1$s · %2$s</string>
+    <string name="prayer_app_prayer_alert_label">تنبيه الصلاة</string>
+    <string name="prayer_app_prayer_alert_state">تنبيه الصلاة: %1$s</string>
+    <string name="prayer_app_prayer_alert_before">قبل الصلاة بـ %1$d دقيقة</string>
+    <string name="prayer_app_prayer_alert_10">قبل الصلاة بـ 10 دقائق</string>
+    <string name="prayer_app_prayer_alert_15">قبل الصلاة بـ 15 دقيقة</string>
+    <string name="prayer_app_prayer_alert_30">قبل الصلاة بـ 30 دقيقة</string>
+    <string name="prayer_app_prayer_alert_notification_title">اقترب موعد الصلاة</string>
+    <string name="prayer_app_prayer_alert_notification_text">%1$s بعد %2$d دقيقة</string>
+    <string name="prayer_app_prayer_alert_permission">اسمح بالإشعارات من إعدادات Android لتلقي تنبيهات الصلاة.</string>
+</resources>

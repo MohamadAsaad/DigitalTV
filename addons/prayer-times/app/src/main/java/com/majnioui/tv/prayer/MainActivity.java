@@ -1,6 +1,8 @@
 package com.majnioui.tv.prayer;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.Manifest;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -8,20 +10,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.content.res.ColorStateList;
+import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.EditText;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.text.InputType;
 
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -43,7 +45,7 @@ public class MainActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private Typeface font;
     private int accent;
-    private TextView dates, next, status;
+    private TextView dates, next, status, alertChoice, placeLabel;
     private LinearLayout rows;
     /** Today's times as minutes after midnight, in NAMES order; null until loaded. */
     private int[] minutes;
@@ -53,6 +55,10 @@ public class MainActivity extends Activity {
     /** The day the times are for (yyyy-MM-dd), to reload after midnight. */
     private String loadedFor;
     private boolean loading;
+    private boolean observerRegistered;
+    private final ContentObserver scheduleObserver = new ContentObserver(main) {
+        @Override public void onChange(boolean selfChange) { load(); }
+    };
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -78,10 +84,18 @@ public class MainActivity extends Activity {
         col.setPadding(dp(80), dp(48), dp(80), dp(40));
         root.addView(col, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView place = text(18, 400, 0xB3FFFFFF);
-        place.setLetterSpacing(0.25f);
-        place.setText(getString(R.string.place).toUpperCase(Locale.ROOT));
-        col.addView(place);
+        placeLabel = text(18, 400, 0xB3FFFFFF);
+        placeLabel.setLetterSpacing(0.25f);
+        placeLabel.setFocusable(true); placeLabel.setClickable(true);
+        placeLabel.setOnClickListener(v -> showLocationPicker());
+        col.addView(placeLabel);
+        updatePlaceLabel();
+
+        alertChoice = text(16, 500, 0xFF7CD4FF);
+        alertChoice.setFocusable(true); alertChoice.setClickable(true);
+        alertChoice.setPadding(0, dp(14), 0, dp(8));
+        alertChoice.setOnClickListener(v -> showAlertPicker());
+        col.addView(alertChoice);
 
         next = text(52, 300, 0xFFFFFFFF);
         next.setPadding(0, dp(10), 0, dp(4));
@@ -101,11 +115,18 @@ public class MainActivity extends Activity {
         col.addView(status);
 
         setContentView(root);
+        if (getSharedPreferences("prayer_times", MODE_PRIVATE).getString("location", "").trim().isEmpty())
+            root.post(this::showLocationPicker);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        updateAlertLabel();
+        if (!observerRegistered) {
+            getContentResolver().registerContentObserver(PrayerTimesRepository.CONTENT_URI, false, scheduleObserver);
+            observerRegistered = true;
+        }
         load();
         main.postDelayed(tick, MINUTE_MS);
     }
@@ -114,6 +135,10 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         main.removeCallbacks(tick);
+        if (observerRegistered) {
+            getContentResolver().unregisterContentObserver(scheduleObserver);
+            observerRegistered = false;
+        }
     }
 
     private static String today() {
@@ -123,58 +148,124 @@ public class MainActivity extends Activity {
     private void load() {
         if (loading) return;
         loading = true;
-        final String day = today();
-        String url = "https://api.aladhan.com/v1/timings/"
-                + new SimpleDateFormat("dd-MM-yyyy", Locale.ROOT).format(new Date())
-                + "?latitude=" + getString(R.string.latitude) + "&longitude=" + getString(R.string.longitude)
-                + "&method=" + getString(R.string.method);
-        new Thread(() -> {
-            JSONObject json = null;
-            try {
-                json = new JSONObject(fetch(url));
-            } catch (Exception e) {
-                Log.w(TAG, "fetch: " + e);
-            }
-            final JSONObject result = json;
-            main.post(() -> {
-                loading = false;
-                if (result == null) {
-                    status.setText("Can't reach Aladhan. Showing the last times, if any.");
-                    return;
-                }
-                try {
-                    parse(result.getJSONObject("data"));
-                    loadedFor = day;
-                    render();
-                } catch (Exception e) {
-                    Log.w(TAG, "parse: " + e);
-                    status.setText("Unexpected answer from Aladhan.");
-                }
-            });
-        }).start();
+        if (getSharedPreferences("prayer_times", MODE_PRIVATE).getString("latitude", "").trim().isEmpty()) {
+            loading = false;
+            status.setText(R.string.location_choose);
+            return;
+        }
+        PrayerTimesRepository.refreshIfNeeded(this);
+        PrayerTimesRepository.refreshWeatherIfNeeded(getApplicationContext());
+        PrayerTimesRepository.Snapshot data = PrayerTimesRepository.read(this);
+        loading = false;
+        if (data == null) {
+            status.setText(R.string.prayer_loading);
+            return;
+        }
+        try {
+            parse(data);
+            PrayerAlertScheduler.scheduleNext(this);
+            loadedFor = data.date;
+            render();
+        } catch (Exception e) {
+            Log.w(TAG, "parse: " + e);
+            status.setText(R.string.prayer_unexpected);
+        }
     }
 
-    private void parse(JSONObject data) throws Exception {
-        JSONObject t = data.getJSONObject("timings");
+    private void updatePlaceLabel() {
+        String name = getSharedPreferences("prayer_times", MODE_PRIVATE).getString("location", "").trim();
+        placeLabel.setText((name.isEmpty() ? getString(R.string.location_choose) : name).toUpperCase(Locale.ROOT));
+    }
+
+    private void showLocationPicker() {
+        android.content.SharedPreferences prefs = getSharedPreferences("prayer_times", MODE_PRIVATE);
+        LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(12); form.setPadding(pad, pad, pad, 0);
+        EditText place = field(form, R.string.location_name_label, prefs.getString("location", ""), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        EditText latitude = field(form, R.string.location_latitude_label, prefs.getString("latitude", ""), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        EditText longitude = field(form, R.string.location_longitude_label, prefs.getString("longitude", ""), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        TextView methodTitle = text(16, 500, 0xFFFFFFFF); methodTitle.setText(R.string.location_method_label); form.addView(methodTitle);
+        Spinner method = new Spinner(this);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.calculation_method_names, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); method.setAdapter(adapter); form.addView(method);
+        int[] ids = getResources().getIntArray(R.array.calculation_method_ids);
+        String selected = prefs.getString("method", "3");
+        for (int i = 0; i < ids.length; i++) if (String.valueOf(ids[i]).equals(selected)) method.setSelection(i);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.location_setup_title).setView(form)
+                .setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String lat = latitude.getText().toString().trim(), lon = longitude.getText().toString().trim();
+            double latValue, lonValue;
+            try { latValue = Double.parseDouble(lat); lonValue = Double.parseDouble(lon); }
+            catch (NumberFormatException ex) { latitude.setError(getString(R.string.location_invalid)); return; }
+            String name = place.getText().toString().trim();
+            if (name.isEmpty() || !Double.isFinite(latValue) || !Double.isFinite(lonValue)
+                    || latValue < -90 || latValue > 90 || lonValue < -180 || lonValue > 180) {
+                place.setError(getString(R.string.location_invalid)); return;
+            }
+            int choice = Math.max(0, method.getSelectedItemPosition());
+            prefs.edit().putString("location", name).putString("latitude", lat).putString("longitude", lon)
+                    .putString("method", String.valueOf(ids[Math.min(choice, ids.length - 1)]))
+                    .remove("day.date").remove("next.date").remove("attempt.date").remove("weather.date")
+                    .putLong("weather.updated", 0L).putLong("weather.attempt", 0L).apply();
+            updatePlaceLabel(); dialog.dismiss(); status.setText(R.string.location_saved); load();
+        }));
+        dialog.show();
+    }
+
+    private EditText field(LinearLayout form, int label, String value, int type) {
+        TextView title = text(16, 500, 0xFFFFFFFF); title.setText(label); form.addView(title);
+        EditText input = new EditText(this); input.setSingleLine(true); input.setInputType(type); input.setText(value);
+        input.setSelectAllOnFocus(true); form.addView(input); return input;
+    }
+
+    private void showAlertPicker() {
+        String[] labels = {getString(R.string.off), getString(R.string.prayer_alert_10),
+                getString(R.string.prayer_alert_15), getString(R.string.prayer_alert_30)};
+        int current = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getBoolean("enabled", false)
+                ? getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("minutes", 10) : 0;
+        int checked = current == 10 ? 1 : current == 15 ? 2 : current == 30 ? 3 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.prayer_alert_label).setSingleChoiceItems(labels, checked, (dialog, which) -> {
+            dialog.dismiss(); int minutes = which == 0 ? 0 : which == 1 ? 10 : which == 2 ? 15 : 30;
+            if (minutes == 0) { PrayerAlertScheduler.set(this, 0); updateAlertLabel(); return; }
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 510);
+                getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).edit().putInt("pending_minutes", minutes).apply();
+                return;
+            }
+            PrayerAlertScheduler.set(this, minutes); updateAlertLabel();
+        }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void updateAlertLabel() {
+        int minutes = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getBoolean("enabled", false)
+                ? getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("minutes", 10) : 0;
+        alertChoice.setText(getString(R.string.prayer_alert_state, minutes == 0 ? getString(R.string.off)
+                : getString(R.string.prayer_alert_before, minutes)));
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode != 510) return;
+        int pending = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("pending_minutes", 0);
+        getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).edit().remove("pending_minutes").apply();
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED && pending > 0) {
+            PrayerAlertScheduler.set(this, pending); updateAlertLabel();
+        } else status.setText(R.string.prayer_alert_permission);
+    }
+
+
+    private void parse(PrayerTimesRepository.Snapshot data) throws Exception {
         int[] m = new int[NAMES.length];
-        String[] s = new String[NAMES.length];
         for (int i = 0; i < NAMES.length; i++) {
-            String v = t.getString(NAMES[i]).trim();
-            int sp = v.indexOf(' ');
-            if (sp > 0) v = v.substring(0, sp);   // "05:12 (+01)" style suffixes
-            s[i] = v;
+            String v = data.times[i];
             m[i] = Integer.parseInt(v.substring(0, 2)) * 60 + Integer.parseInt(v.substring(3, 5));
         }
         minutes = m;
-        times = s;
-        JSONObject meta = data.optJSONObject("meta");
-        JSONObject method = meta != null ? meta.optJSONObject("method") : null;
-        methodName = method != null ? method.optString("name", "") : "";
-        JSONObject date = data.getJSONObject("date");
-        JSONObject hijri = date.getJSONObject("hijri");
-        dates.setText(new SimpleDateFormat("EEEE d MMMM", Locale.ENGLISH).format(new Date()) + "  ·  "
-                + hijri.getString("day") + " " + hijri.getJSONObject("month").getString("en") + " "
-                + hijri.getString("year") + " AH");
+        times = data.times;
+        methodName = data.method;
+        String day = new SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(new Date());
+        dates.setText(data.hijri.isEmpty() ? day : day + "  ·  " + data.hijri);
     }
 
     private void render() {
@@ -188,9 +279,10 @@ public class MainActivity extends Activity {
         }
         if (nextIdx >= 0) {
             int left = minutes[nextIdx] - now;
-            next.setText(NAMES[nextIdx] + " in " + (left >= 60 ? left / 60 + " h " : "") + left % 60 + " min");
+            next.setText(getString(R.string.prayer_next_in, ARABIC[nextIdx],
+                    (left >= 60 ? left / 60 + " س " : "") + left % 60 + " د"));
         } else {
-            next.setText("Fajr tomorrow");
+            next.setText(R.string.prayer_fajr_tomorrow);
         }
 
         rows.removeAllViews();
@@ -229,22 +321,8 @@ public class MainActivity extends Activity {
             lp.setMargins(i == 0 ? 0 : dp(8), 0, i == NAMES.length - 1 ? 0 : dp(8), 0);
             rows.addView(card, lp);
         }
-        status.setText("Aladhan" + (methodName.isEmpty() ? "" : " · " + methodName) + " · updated "
-                + new SimpleDateFormat("HH:mm", Locale.ROOT).format(new Date()));
-    }
-
-    private static String fetch(String url) throws Exception {
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-        c.setConnectTimeout(8000);
-        c.setReadTimeout(8000);
-        try (InputStream in = c.getInputStream()) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[4096];
-            for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
-            return out.toString("UTF-8");
-        } finally {
-            c.disconnect();
-        }
+        status.setText(getString(R.string.prayer_updated,
+                new SimpleDateFormat("HH:mm", Locale.ROOT).format(new Date()), methodName));
     }
 
     /** Centred on its own line, whatever the script direction. */

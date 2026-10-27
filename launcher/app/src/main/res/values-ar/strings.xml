@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">الرئيسية</string>
+    <string name="app_name">DigitalTV</string>
     <string name="inputs">المدخلات</string>
     <string name="wifi">واي فاي</string>
     <string name="settings">الإعدادات</string>
@@ -27,7 +27,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN متوقف</string>
     <string name="home_settings">الشاشة الرئيسية الافتراضية</string>
-    <string name="home_settings_help">اختر الشاشة الرئيسية الأصلية لإيقاف استخدام CleanYourTV افتراضيًا، أو اختر CleanYourTV للعودة. يجب أن يكون المشغّل الأصلي مفعّلًا وأن يدعم التلفاز اختيار الشاشة الرئيسية. إذا عُطّل، استخدم برنامج الاستعادة أولًا.</string>
+    <string name="home_settings_help">اختر الشاشة الرئيسية الأصلية لإيقاف استخدام DigitalTV افتراضيًا، أو اختر DigitalTV للعودة. يجب أن يكون المشغّل الأصلي مفعّلًا وأن يدعم التلفاز اختيار الشاشة الرئيسية. إذا عُطّل، استخدم برنامج الاستعادة أولًا.</string>
     <string name="input_key_service_description">يفتح قائمة المدخلات عند الضغط على زر المدخلات في جهاز التحكم.</string>
     <string name="home_key_name">زر الرئيسية</string>
     <string name="home_key_description">يجعل زر الرئيسية في جهاز التحكم يفتح هذه الشاشة.</string>
@@ -97,4 +97,75 @@
         <item quantity="other">%1$d تطبيق</item>
     </plurals>
     <string name="greeting_with_name">%1$s، %2$s</string>
+    <string name="prayer_panel_title">الصلاة القادمة</string>
+    <string name="prayer_setup_home">حدّد الموقع من الإعدادات</string>
+    <string name="prayer_loading">جارٍ تحميل مواقيت اليوم…</string>
+    <string name="prayer_unavailable">مواقيت الصلاة غير متاحة</string>
+    <string name="prayer_countdown">%1$s بعد %2$s</string>
+    <string name="prayer_fajr_tomorrow">الفجر غدًا</string>
+    <string name="prayer_today_times">اليوم · %1$s</string>
+    <string name="prayer_countdown_hours">%1$02d:%2$02d</string>
+    <string name="prayer_countdown_minutes">%1$d دقيقة</string>
+    <string name="wallpaper_label">الخلفية</string>
+    <string name="wallpaper_none">بدون خلفية</string>
+    <string name="wallpaper_theme_default">الخلفية الافتراضية للسمة</string>
+    <string name="wallpaper_builtin_moon">بحيرة تحت ضوء القمر</string>
+    <string name="wallpaper_builtin_dunes">كثبان هادئة</string>
+    <string name="wallpaper_builtin_coast">ساحل ذهبي</string>
+    <string name="wallpaper_from_device">اختيار صورة من الجهاز…</string>
+    <string name="wallpaper_state">الخلفية: %1$s</string>
+    <string name="wallpaper_imported">تم اختيار الخلفية</string>
+    <string name="wallpaper_import_failed">تعذّر استخدام هذه الصورة</string>
+    <string name="home_idle_clock_label">ساعة الخمول</string>
+    <string name="home_idle_clock_state">ساعة الخمول: %1$s</string>
+    <string name="home_idle_clock_off">متوقفة</string>
+    <string name="home_idle_clock_15s">بعد 15 ثانية</string>
+    <string name="home_idle_clock_45s">بعد 45 ثانية</string>
+    <string name="home_idle_clock_30m">بعد 30 دقيقة</string>
+    <string name="home_idle_clock_60m">بعد ساعة</string>
+    <string name="home_idle_clock_30s">بعد 30 ثانية</string>
+    <string name="home_idle_clock_1m">بعد دقيقة</string>
+    <string name="home_idle_clock_2m">بعد دقيقتين</string>
+    <string name="home_idle_clock_5m">بعد 5 دقائق</string>
+    <string name="home_idle_clock_10m">بعد 10 دقائق</string>
+    <string name="home_idle_clock_15m">بعد 15 دقيقة</string>
+    <string name="tile_uninstall_app">إلغاء تثبيت التطبيق…</string>
+    <string name="tile_uninstall_unavailable">لا يمكن إلغاء تثبيت هذا التطبيق من الشاشة الرئيسية.</string>
+    <string name="weather_panel_title">طقس اليوم</string>
+    <string name="weather_setup_home">حدّد الموقع من الإعدادات</string>
+    <string name="weather_loading">جارٍ تحميل طقس اليوم…</string>
+    <string name="weather_unavailable">الطقس غير متاح مؤقتًا</string>
+    <string name="weather_now">%1$s° · %2$s</string>
+    <string name="weather_today">العظمى %1$s° · الصغرى %2$s° · احتمال المطر %3$s%%</string>
+    <string name="weather_clear">صافٍ</string><string name="weather_partly_cloudy">غائم جزئيًا</string>
+    <string name="weather_cloudy">غائم</string><string name="weather_fog">ضباب</string>
+    <string name="weather_drizzle">رذاذ</string><string name="weather_rain">ممطر</string>
+    <string name="weather_snow">ثلج</string><string name="weather_showers">زخات مطر</string>
+    <string name="weather_thunderstorm">عاصفة رعدية</string><string name="weather_unknown">الطقس</string>
+    <string name="wallpaper_preview_title">معاينة الخلفية</string><string name="wallpaper_apply">استخدم هذه الخلفية</string>
+    <string name="wallpaper_dim_label">سطوع الخلفية</string><string name="wallpaper_dim_state">سطوع الخلفية: %1$s</string>
+    <string name="wallpaper_rotation_label">تغيير الخلفية تلقائيًا</string><string name="wallpaper_rotation_state">تغيير الخلفية: %1$s</string>
+    <string name="wallpaper_rotation_theme">حسب إعداد السمة</string><string name="wallpaper_rotation_off">متوقف</string>
+    <string name="wallpaper_rotation_15m">كل 15 دقيقة</string><string name="wallpaper_rotation_30m">كل 30 دقيقة</string><string name="wallpaper_rotation_60m">كل ساعة</string>
+    <string name="home_card_order_label">ترتيب بطاقتي الرئيسية</string><string name="home_card_order_state">البطاقات: %1$s</string>
+    <string name="prayer_settings_label">مواقيت الصلاة والطقس</string>
+    <string name="home_card_prayer_weather">الصلاة يسارًا · الطقس يمينًا</string><string name="home_card_weather_prayer">الطقس يسارًا · الصلاة يمينًا</string>
+    <string name="clock_content_label">تفاصيل ساعة الخمول</string><string name="clock_content_state">ساعة الخمول: %1$s</string>
+    <string name="clock_content_time_date">الوقت والتاريخ</string><string name="clock_content_time_prayer">الوقت والتاريخ والصلاة القادمة</string><string name="clock_content_prayer_date">الوقت والصلاة القادمة والتاريخ</string>
+    <string name="clock_content_time_only">الوقت فقط</string><string name="clock_content_time_prayer_only">الوقت والصلاة القادمة</string>
+    <string name="clock_content_time_date_prayer">الوقت والتاريخ والصلاة القادمة</string>
+    <string name="clock_digits_label">أرقام الساعة</string><string name="clock_digits_state">أرقام الساعة: %1$s</string>
+    <string name="clock_digits_system">حسب لغة الجهاز</string><string name="clock_digits_western">أرقام إنجليزية (0–9)</string><string name="clock_digits_arabic">أرقام عربية (٠–٩)</string>
+    <string name="clock_format_label">تنسيق الوقت</string><string name="clock_format_state">تنسيق الوقت: %1$s</string>
+    <string name="clock_format_system">حسب إعداد الجهاز</string><string name="clock_format_12">12 ساعة</string><string name="clock_format_24">24 ساعة</string>
+    <string name="clock_brightness_label">سطوع الساعة</string><string name="clock_brightness_state">سطوع الساعة: %1$d٪</string>
+    <string name="clock_next_prayer">الصلاة القادمة · %1$s بعد %2$s</string><string name="clock_fajr_tomorrow">الصلاة القادمة · الفجر غدًا %1$s</string>
+    <string name="prayer_name_fajr">الفجر</string><string name="prayer_name_dhuhr">الظهر</string><string name="prayer_name_asr">العصر</string><string name="prayer_name_maghrib">المغرب</string><string name="prayer_name_isha">العشاء</string>
+    <string name="dock_apps_settings">اختيار تطبيقات الشريط وترتيبها</string><string name="performance_state">تقليل الحركة: %1$s</string><string name="performance_label">أداء التلفاز</string>
+    <string name="backup_export">نسخ إعدادات المشغّل احتياطيًا…</string><string name="backup_import">استعادة إعدادات المشغّل…</string>
+    <string name="backup_export_done">تم حفظ النسخة الاحتياطية</string><string name="backup_import_done">تمت استعادة الإعدادات</string><string name="backup_failed">تعذرت قراءة ملف النسخة أو حفظه</string>
+    <string name="backup_wallpaper_too_large">حجم الخلفية المختارة يتجاوز حد النسخة الاحتياطية وهو 8 م.ب</string>
+    <string name="weather_tomorrow">غدًا %1$s° · %2$s° · %3$s</string><string name="weather_last_updated">آخر تحديث %1$s</string>
+    <string name="weather_refresh">تحديث الطقس</string><string name="weather_refreshing">جارٍ التحديث…</string>
+    <string name="weather_panel_stale">%1$s · بيانات قديمة</string>
 </resources>

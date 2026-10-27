@@ -1,0 +1,5 @@
+<resources>
+    <string name="target_package" translatable="false">com.gathin.tvhome</string>
+    <string name="manifest_asset" translatable="false">update-manifest.json</string>
+    <string name="apk_asset_default" translatable="false">digitaltv-launcher.apk</string>
+</resources>

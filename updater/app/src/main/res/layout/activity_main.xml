@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#101419"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="32dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/title"
+            android:textColor="#FFFFFFFF"
+            android:textSize="30sp"
+            android:fontFamily="sans-serif-medium" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/intro"
+            android:textColor="#FFB8C2CA"
+            android:textSize="17sp" />
+        <EditText
+            android:id="@+id/repositoryOwner"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="28dp"
+            android:hint="@string/owner_hint"
+            android:singleLine="true"
+            android:inputType="textNoSuggestions"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:textColor="#FFFFFFFF"
+            android:textColorHint="#FF85919B"
+            android:backgroundTint="#FF49D6A0"
+            android:nextFocusDown="@id/repositoryName" />
+        <EditText
+            android:id="@+id/repositoryName"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="8dp"
+            android:hint="@string/repository_hint"
+            android:singleLine="true"
+            android:inputType="textNoSuggestions"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:textColor="#FFFFFFFF"
+            android:textColorHint="#FF85919B"
+            android:backgroundTint="#FF49D6A0"
+            android:nextFocusDown="@id/checkButton" />
+        <CheckBox
+            android:id="@+id/dailyCheck"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:buttonTint="#FF49D6A0"
+            android:text="@string/daily_check"
+            android:textColor="#FFE3E9ED"
+            android:textSize="16sp"
+            android:nextFocusDown="@id/checkButton" />
+        <EditText
+            android:id="@+id/testBaseUrl"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="8dp"
+            android:hint="@string/test_url_hint"
+            android:singleLine="true"
+            android:inputType="textUri"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:textColor="#FFFFFFFF"
+            android:textColorHint="#FF85919B"
+            android:backgroundTint="#FF49D6A0"
+            android:visibility="gone" />
+        <Button
+            android:id="@+id/checkButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="20dp"
+            android:text="@string/check_updates"
+            android:textSize="18sp"
+            android:nextFocusDown="@id/installButton" />
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="12dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:minHeight="58dp"
+            android:gravity="center_vertical"
+            android:text="@string/status_ready"
+            android:textColor="#FFE3E9ED"
+            android:textSize="18sp" />
+        <Button
+            android:id="@+id/installButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="8dp"
+            android:enabled="false"
+            android:text="@string/install_update"
+            android:textSize="18sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/install_note"
+            android:textColor="#FF87939C"
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>
