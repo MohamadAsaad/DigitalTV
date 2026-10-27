@@ -2,7 +2,7 @@
 
 **DigitalTV** is an Android TV home-screen launcher with customizable wallpaper and app rows, an idle clock, and built-in prayer-time and weather cards. It is designed for Android TV and Google TV devices running Android 8 (API 26) or newer; device-specific firmware differences can affect individual features.
 
-The prayer and weather feature is part of the launcher, not a separate prayer-times app. It uses Aladhan for prayer schedules and Open-Meteo for weather after you configure a location. The app explains which location details are sent when you set it up.
+The prayer and weather feature is part of the launcher, not a separate prayer-times app. Choose a city, use the device's location once with permission, or enter coordinates manually. The saved coordinates are sent to Aladhan for prayer schedules and Open-Meteo for weather; the launcher does not track location in the background.
 
 ## Build locally
 

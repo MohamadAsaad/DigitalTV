@@ -2,13 +2,29 @@
 <resources><color name="prayer_app_accent">#2BB673</color>
     <string name="prayer_app_location_choose">Set location</string>
     <string name="prayer_app_location_setup_title">Prayer and weather location</string>
+    <string name="prayer_app_location_use_current">Use current device location</string>
+    <string name="prayer_app_location_choose_city">Choose a city</string>
+    <string name="prayer_app_location_manual">Enter coordinates manually (advanced)</string>
+    <string name="prayer_app_location_current">Current location</string>
+    <string name="prayer_app_location_permission_request">Allow location access to detect your position once.</string>
+    <string name="prayer_app_location_permission_denied">Location access was not allowed. Choose a city or allow it in Android settings.</string>
+    <string name="prayer_app_location_detecting">Finding your location…</string>
+    <string name="prayer_app_location_not_found">Could not detect your location. Turn on Location in Android settings or choose a city.</string>
     <string name="prayer_app_location_name_label">City or place name</string>
     <string name="prayer_app_location_latitude_label">Latitude</string>
     <string name="prayer_app_location_longitude_label">Longitude</string>
     <string name="prayer_app_location_method_label">Prayer calculation method</string>
     <string name="prayer_app_location_invalid">Enter a place name and valid latitude and longitude.</string>
     <string name="prayer_app_location_saved">Location saved. Refreshing prayer times and weather…</string>
-    <string name="prayer_app_location_privacy">Your coordinates go to Aladhan for prayer times and Open-Meteo for weather. No location permission is used.</string>
+    <string name="prayer_app_location_privacy">Location is used once only when you choose it. Coordinates go to Aladhan for prayer times and Open-Meteo for weather; the app does not track you in the background.</string>
+    <string-array name="prayer_app_cities">
+        <item>Istanbul</item><item>Ankara</item><item>Izmir</item><item>Bursa</item><item>Antalya</item>
+        <item>Mecca</item><item>Medina</item><item>Riyadh</item><item>Jeddah</item><item>Cairo</item>
+        <item>Alexandria</item><item>Damascus</item><item>Amman</item><item>Beirut</item><item>Dubai</item>
+        <item>Doha</item><item>Kuwait City</item><item>Baghdad</item><item>Casablanca</item><item>Tunis</item>
+        <item>London</item><item>Paris</item><item>Berlin</item><item>New York</item><item>Toronto</item>
+        <item>Delhi</item><item>Karachi</item><item>Kuala Lumpur</item><item>Jakarta</item>
+    </string-array>
     <string-array name="prayer_app_calculation_method_names">
         <item>Muslim World League</item><item>ISNA</item><item>Egyptian General Authority</item>
         <item>Umm Al-Qura University, Makkah</item><item>Karachi</item><item>Turkey (Diyanet)</item>

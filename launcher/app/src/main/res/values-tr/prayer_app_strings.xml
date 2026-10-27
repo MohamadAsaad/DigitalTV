@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prayer_app_location_use_current">Mevcut cihaz konumunu kullan</string>
+    <string name="prayer_app_location_choose_city">Şehir seç</string>
+    <string name="prayer_app_location_manual">Koordinatları elle gir (gelişmiş)</string>
+    <string name="prayer_app_location_current">Mevcut konum</string>
+    <string name="prayer_app_location_permission_request">Konumunuzu bir kez bulmak için konum erişimine izin verin.</string>
+    <string name="prayer_app_location_permission_denied">Konum erişimine izin verilmedi. Bir şehir seçin veya Android ayarlarından izin verin.</string>
+    <string name="prayer_app_location_detecting">Konumunuz bulunuyor…</string>
+    <string name="prayer_app_location_not_found">Konumunuz bulunamadı. Android ayarlarından Konum’u açın veya bir şehir seçin.</string>
+    <string name="prayer_app_location_privacy">Konum yalnızca siz seçtiğinizde bir kez kullanılır. Koordinatlar namaz vakitleri için Aladhan’a, hava durumu için Open-Meteo’ya gönderilir; uygulama arka planda konumunuzu izlemez.</string>
+    <string-array name="prayer_app_cities">
+        <item>İstanbul</item><item>Ankara</item><item>İzmir</item><item>Bursa</item><item>Antalya</item>
+        <item>Mekke</item><item>Medine</item><item>Riyad</item><item>Cidde</item><item>Kahire</item>
+        <item>İskenderiye</item><item>Şam</item><item>Amman</item><item>Beyrut</item><item>Dubai</item>
+        <item>Doha</item><item>Kuveyt</item><item>Bağdat</item><item>Casablanca</item><item>Tunus</item>
+        <item>Londra</item><item>Paris</item><item>Berlin</item><item>New York</item><item>Toronto</item>
+        <item>Delhi</item><item>Karaçi</item><item>Kuala Lumpur</item><item>Cakarta</item>
+    </string-array>
+</resources>
