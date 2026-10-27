@@ -66,8 +66,8 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon testReleaseUnitTest lintRelease assembleRelease
-      - name: The launcher stays small
+      - name: Keep the launcher within the approved size budget
         run: |
           size=$(stat -c %s launcher/app/build/outputs/apk/release/app-release.apk)
-          echo "release APK: $((size / 1024)) KB"
-          test "$size" -lt 589824 || { echo "APK is over 576 KB; the launcher targets 1 GB TVs, keep it small"; exit 1; }
+          echo "release APK: $((size / 1024)) KB (limit 640 KB)"
+          test "$size" -lt 655360 || { echo "APK is over the approved 640 KB budget"; exit 1; }

@@ -3,6 +3,7 @@
     <string name="prayer_app_location_choose">Set location</string>
     <string name="prayer_app_location_setup_title">Prayer and weather location</string>
     <string name="prayer_app_location_use_current">Use current device location</string>
+    <string name="prayer_app_location_continue">Continue</string>
     <string name="prayer_app_location_choose_city">Choose a city</string>
     <string name="prayer_app_location_manual">Enter coordinates manually (advanced)</string>
     <string name="prayer_app_location_current">Current location</string>

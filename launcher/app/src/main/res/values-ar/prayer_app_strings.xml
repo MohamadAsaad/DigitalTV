@@ -3,6 +3,7 @@
     <string name="prayer_app_location_choose">تحديد الموقع</string>
     <string name="prayer_app_location_setup_title">موقع مواقيت الصلاة والطقس</string>
     <string name="prayer_app_location_use_current">تحديد موقعي الحالي</string>
+    <string name="prayer_app_location_continue">متابعة</string>
     <string name="prayer_app_location_choose_city">اختيار مدينة</string>
     <string name="prayer_app_location_manual">إدخال الإحداثيات يدويًا (متقدم)</string>
     <string name="prayer_app_location_current">موقعي الحالي</string>

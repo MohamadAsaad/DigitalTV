@@ -215,7 +215,6 @@ public final class PrayerTimesActivity extends Activity {
                 getString(R.string.prayer_app_location_manual)
         };
         new AlertDialog.Builder(this).setTitle(R.string.prayer_app_location_setup_title)
-                .setMessage(R.string.prayer_app_location_privacy)
                 .setItems(choices, (dialog, which) -> {
                     if (which == 0) useCurrentLocation();
                     else if (which == 1) showCityPicker();
@@ -235,6 +234,13 @@ public final class PrayerTimesActivity extends Activity {
     }
 
     private void useCurrentLocation() {
+        new AlertDialog.Builder(this).setTitle(R.string.prayer_app_location_use_current)
+                .setMessage(R.string.prayer_app_location_privacy)
+                .setPositiveButton(R.string.prayer_app_location_continue, (dialog, which) -> requestCurrentLocationPermission())
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void requestCurrentLocationPermission() {
         if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
