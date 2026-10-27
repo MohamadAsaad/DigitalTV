@@ -102,47 +102,60 @@
         android:layout_gravity="top|right"
         android:layout_marginEnd="60dp"
         android:layout_marginTop="158dp"
-        android:background="@drawable/prayer_panel_background"
-        android:orientation="vertical"
-        android:gravity="right"
+        android:background="@drawable/home_prayer_card_background"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingStart="20dp"
         android:paddingEnd="24dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="15dp"
-        android:focusable="false"
-        android:importantForAccessibility="no"
+        android:paddingTop="18dp"
+        android:paddingBottom="18dp"
+        android:focusable="true"
+        android:clickable="true"
+        android:contentDescription="@string/prayer_panel_open"
         android:visibility="gone">
 
-        <TextView
-            android:id="@+id/prayerKicker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:textColor="#B3FFFFFF"
-            android:textSize="12sp"
-            android:fontFamily="@string/font_medium"
-            android:letterSpacing="0.16" />
+        <com.gathin.tvhome.PrayerCountdownRing
+            android:id="@+id/prayerCountdownRing"
+            android:layout_width="82dp"
+            android:layout_height="82dp"
+            android:layout_marginEnd="20dp"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/prayerHeadline"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:singleLine="true"
-            android:textColor="#FFFFFFFF"
-            android:textSize="28sp"
-            android:fontFamily="@string/font_light"
-            android:includeFontPadding="false" />
-
-        <TextView
-            android:id="@+id/prayerSessions"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:singleLine="true"
-            android:textColor="#99FFFFFF"
-            android:textSize="12sp"
-            android:fontFamily="@string/font_medium" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="right">
+            <TextView
+                android:id="@+id/prayerKicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textColor="#FFD77A"
+                android:textSize="13sp"
+                android:fontFamily="@string/font_medium" />
+            <TextView
+                android:id="@+id/prayerHeadline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:singleLine="true"
+                android:textColor="#FFFFFFFF"
+                android:textSize="28sp"
+                android:fontFamily="@string/font_medium"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/prayerSessions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:singleLine="true"
+                android:textColor="#B3FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="@string/font_light" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -152,15 +165,16 @@
         android:layout_gravity="top|left"
         android:layout_marginStart="60dp"
         android:layout_marginTop="158dp"
-        android:background="@drawable/weather_panel_background"
+        android:background="@drawable/home_weather_card_background"
         android:orientation="vertical"
         android:gravity="left"
         android:paddingStart="24dp"
         android:paddingEnd="20dp"
         android:paddingTop="14dp"
         android:paddingBottom="15dp"
-        android:focusable="false"
-        android:importantForAccessibility="no"
+        android:focusable="true"
+        android:clickable="true"
+        android:contentDescription="@string/weather_panel_open"
         android:visibility="gone">
         <TextView android:id="@+id/weatherKicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:singleLine="true" android:textColor="#B3FFFFFF" android:textSize="12sp"

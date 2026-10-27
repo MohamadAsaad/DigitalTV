@@ -681,6 +681,27 @@ final class Config {
             wallpaper = chosen.isEmpty() ? null : chosen.get(0);
             wallpaperEnabled = !chosen.isEmpty();
         }
+        String selectedWallpapers = choices.getString("wallpaper_choices", "");
+        if (!selectedWallpapers.isEmpty()) {
+            try {
+                org.json.JSONArray selected = new org.json.JSONArray(selectedWallpapers);
+                List<File> selectedFiles = new ArrayList<>();
+                for (int i = 0; i < selected.length(); i++) {
+                    String name = selected.optString(i, "");
+                    File selectedFile = "@device".equals(name) && dir != null
+                            ? new File(dir, "wallpaper-picked.jpg") : WallpaperRotation.find(collection, name);
+                    if (selectedFile == null && dir != null && WALLPAPER_NAME.equals(name)) {
+                        File themeSingle = new File(dir, WALLPAPER_NAME);
+                        if (themeSingle.isFile()) selectedFile = themeSingle;
+                    }
+                    if (selectedFile != null && selectedFile.isFile() && selectedFile.length() > 0
+                            && !selectedFiles.contains(selectedFile)) selectedFiles.add(selectedFile);
+                }
+                if (!selectedFiles.isEmpty()) {
+                    wallpapers.clear(); wallpapers.addAll(selectedFiles); wallpaper = selectedFiles.get(0); wallpaperEnabled = true;
+                }
+            } catch (org.json.JSONException ignored) { }
+        }
         // A festive skin comes only from a theme; config.xml has no festival.
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));

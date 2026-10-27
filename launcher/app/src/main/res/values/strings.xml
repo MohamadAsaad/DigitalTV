@@ -195,7 +195,8 @@
     <string name="wallpaper_dim_label">Wallpaper brightness</string><string name="wallpaper_dim_state">Wallpaper brightness: %1$s</string>
     <string name="wallpaper_rotation_label">Automatic wallpaper change</string><string name="wallpaper_rotation_state">Wallpaper change: %1$s</string>
     <string name="wallpaper_rotation_theme">Theme setting</string><string name="wallpaper_rotation_off">Off</string>
-    <string name="wallpaper_rotation_15m">Every 15 minutes</string><string name="wallpaper_rotation_30m">Every 30 minutes</string><string name="wallpaper_rotation_60m">Every hour</string>
+    <string name="wallpaper_rotation_5m">Every 5 minutes</string><string name="wallpaper_rotation_10m">Every 10 minutes</string>
+    <string name="wallpaper_rotation_15m">Every 15 minutes</string><string name="wallpaper_rotation_30m">Every 30 minutes</string><string name="wallpaper_rotation_60m">Every hour</string><string name="wallpaper_rotation_120m">Every 2 hours</string>
     <string name="home_card_order_label">Home information cards</string><string name="home_card_order_state">Home cards: %1$s</string>
     <string name="prayer_settings_label">Prayer times and weather</string>
     <string name="home_card_prayer_weather">Prayer left · Weather right</string><string name="home_card_weather_prayer">Weather left · Prayer right</string>
@@ -217,4 +218,16 @@
     <string name="weather_tomorrow">Tomorrow %1$s° · %2$s° · %3$s</string><string name="weather_last_updated">Updated %1$s</string>
     <string name="weather_refresh">Refresh weather</string><string name="weather_refreshing">Refreshing…</string>
     <string name="weather_panel_stale">%1$s · old data</string>
+    <string name="prayer_panel_open">Open all prayer times</string><string name="prayer_panel_next">Remaining</string>
+    <plurals name="countdown_minutes_unit"><item quantity="one">minute</item><item quantity="other">minutes</item></plurals>
+    <plurals name="wallpaper_selected_count"><item quantity="one">%1$d wallpaper selected</item><item quantity="other">%1$d wallpapers selected</item></plurals>
+    <string name="weather_panel_open">Open 24-hour weather forecast</string>
+    <string name="weather_forecast_title">Next 24 hours</string><string name="weather_forecast_subtitle">Hourly forecast for your saved location</string>
+    <string name="weather_forecast_loading">Loading the hourly forecast…</string><string name="weather_forecast_cached">Saved forecast</string>
+    <string name="weather_rain_probability">Rain %1$d%%</string>
+    <string name="prayer_widget_state">Prayer widget: %1$s</string><string name="weather_widget_state">Weather widget: %1$s</string>
+    <string name="check_updates_label">Check for DigitalTV updates</string><string name="check_updates_checking">Checking GitHub for a newer version…</string>
+    <string name="check_updates_latest">You have the latest version (%1$s).</string><string name="check_updates_available">DigitalTV %1$s is available (installed: %2$s).</string>
+    <string name="check_updates_failed">Could not check GitHub. Check the internet connection and try again.</string><string name="check_updates_open">Open GitHub release</string>
+    <string name="wallpaper_multi_label">Choose wallpapers (select several to rotate)</string>
 </resources>

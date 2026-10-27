@@ -96,7 +96,10 @@
         <TextView android:id="@+id/wallpaperDimChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/wallpaperRotationChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/homeCardOrderChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/prayerWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/weatherWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/prayerSettingsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" android:text="@string/prayer_settings_label" />
+        <TextView android:id="@+id/checkUpdatesChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/clockContentChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/clockDigitsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/clockFormatChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
