@@ -13,6 +13,9 @@ import android.os.Looper;
 import android.content.res.ColorStateList;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -24,11 +27,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.text.InputType;
+import android.annotation.SuppressLint;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.List;
 
 /**
  * Today's prayer times for one city from Aladhan (free, no account or key; only the coordinates and
@@ -42,6 +47,21 @@ public final class PrayerTimesActivity extends Activity {
     private static final int[] ICONS = {R.drawable.ic_fajr, R.drawable.ic_sunrise, R.drawable.ic_dhuhr,
             R.drawable.ic_asr, R.drawable.ic_maghrib, R.drawable.ic_isha};
     private static final long MINUTE_MS = 60_000L;
+    private static final int LOCATION_PERMISSION_REQUEST = 511;
+    private static final long LOCATION_TIMEOUT_MS = 20_000L;
+    private static final long MAX_LAST_LOCATION_AGE_MS = 24 * 60 * 60_000L;
+    private static final City[] CITIES = {
+            new City(41.0082, 28.9784), new City(39.9334, 32.8597), new City(38.4237, 27.1428),
+            new City(40.1950, 29.0600), new City(36.8969, 30.7133), new City(21.3891, 39.8579),
+            new City(24.4672, 39.6111), new City(24.7136, 46.6753), new City(21.4858, 39.1925),
+            new City(30.0444, 31.2357), new City(31.2001, 29.9187), new City(33.5138, 36.2765),
+            new City(31.9539, 35.9106), new City(33.8938, 35.5018), new City(25.2048, 55.2708),
+            new City(25.2854, 51.5310), new City(29.3759, 47.9774), new City(33.3152, 44.3661),
+            new City(33.5731, -7.5898), new City(36.8065, 10.1815), new City(51.5072, -0.1276),
+            new City(48.8566, 2.3522), new City(52.5200, 13.4050), new City(40.7128, -74.0060),
+            new City(43.6532, -79.3832), new City(28.6139, 77.2090), new City(24.8607, 67.0011),
+            new City(3.1390, 101.6869), new City(-6.2088, 106.8456)
+    };
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private Typeface font;
@@ -57,6 +77,11 @@ public final class PrayerTimesActivity extends Activity {
     private String loadedFor;
     private boolean loading;
     private boolean observerRegistered;
+    private LocationListener locationListener;
+    private final Runnable locationTimeout = () -> {
+        stopLocationUpdates();
+        status.setText(R.string.prayer_app_location_not_found);
+    };
     private final ContentObserver scheduleObserver = new ContentObserver(main) {
         @Override public void onChange(boolean selfChange) { load(); }
     };
@@ -140,6 +165,7 @@ public final class PrayerTimesActivity extends Activity {
     protected void onPause() {
         super.onPause();
         main.removeCallbacks(tick);
+        stopLocationUpdates();
         if (observerRegistered) {
             getContentResolver().unregisterContentObserver(scheduleObserver);
             observerRegistered = false;
@@ -183,6 +209,146 @@ public final class PrayerTimesActivity extends Activity {
     }
 
     private void showLocationPicker() {
+        String[] choices = {
+                getString(R.string.prayer_app_location_use_current),
+                getString(R.string.prayer_app_location_choose_city),
+                getString(R.string.prayer_app_location_manual)
+        };
+        new AlertDialog.Builder(this).setTitle(R.string.prayer_app_location_setup_title)
+                .setMessage(R.string.prayer_app_location_privacy)
+                .setItems(choices, (dialog, which) -> {
+                    if (which == 0) useCurrentLocation();
+                    else if (which == 1) showCityPicker();
+                    else showManualLocationPicker();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showCityPicker() {
+        String[] cities = getResources().getStringArray(R.array.prayer_app_cities);
+        new AlertDialog.Builder(this).setTitle(R.string.prayer_app_location_choose_city)
+                .setItems(cities, (dialog, which) -> {
+                    if (which >= 0 && which < CITIES.length && which < cities.length) {
+                        City city = CITIES[which];
+                        saveLocation(cities[which], city.latitude, city.longitude, null);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void useCurrentLocation() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+            status.setText(R.string.prayer_app_location_permission_request);
+            return;
+        }
+        detectCurrentLocation();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void detectCurrentLocation() {
+        LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (manager == null) {
+            status.setText(R.string.prayer_app_location_not_found);
+            return;
+        }
+        Location best = null;
+        List<String> providers;
+        try {
+            providers = manager.getProviders(true);
+            for (String provider : providers) {
+                try {
+                    Location last = manager.getLastKnownLocation(provider);
+                    if (isRecent(last) && (best == null || last.getTime() > best.getTime())) best = last;
+                } catch (SecurityException ignored) { }
+            }
+        } catch (SecurityException e) {
+            status.setText(R.string.prayer_app_location_permission_denied);
+            return;
+        }
+        if (best != null) {
+            acceptCurrentLocation(best);
+            return;
+        }
+        if (providers.isEmpty()) {
+            status.setText(R.string.prayer_app_location_not_found);
+            return;
+        }
+        stopLocationUpdates();
+        locationListener = new LocationListener() {
+            @Override public void onLocationChanged(Location location) { acceptCurrentLocation(location); }
+            @Override public void onProviderEnabled(String provider) { }
+            @Override public void onProviderDisabled(String provider) { }
+            @Override public void onStatusChanged(String provider, int providerStatus, Bundle extras) { }
+        };
+        int requestedProviders = 0;
+        try {
+            for (String provider : providers) {
+                try {
+                    manager.requestLocationUpdates(provider, 0L, 0f, locationListener, Looper.getMainLooper());
+                    requestedProviders++;
+                }
+                catch (SecurityException | IllegalArgumentException ignored) { }
+            }
+            if (requestedProviders == 0) {
+                stopLocationUpdates();
+                status.setText(R.string.prayer_app_location_not_found);
+                return;
+            }
+            status.setText(R.string.prayer_app_location_detecting);
+            main.postDelayed(locationTimeout, LOCATION_TIMEOUT_MS);
+        } catch (SecurityException e) {
+            stopLocationUpdates();
+            status.setText(R.string.prayer_app_location_permission_denied);
+        }
+    }
+
+    private boolean isRecent(Location location) {
+        if (location == null) return false;
+        long age = System.currentTimeMillis() - location.getTime();
+        return age >= 0 && age <= MAX_LAST_LOCATION_AGE_MS;
+    }
+
+    private void acceptCurrentLocation(Location location) {
+        stopLocationUpdates();
+        saveLocation(getString(R.string.prayer_app_location_current), location.getLatitude(), location.getLongitude(), null);
+    }
+
+    private void stopLocationUpdates() {
+        main.removeCallbacks(locationTimeout);
+        if (locationListener == null) return;
+        LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (manager != null) {
+            try { manager.removeUpdates(locationListener); } catch (SecurityException ignored) { }
+        }
+        locationListener = null;
+    }
+
+    private void saveLocation(String name, double latitude, double longitude, String method) {
+        android.content.SharedPreferences prefs = getSharedPreferences("prayer_times", MODE_PRIVATE);
+        String savedMethod = method;
+        if (savedMethod == null || savedMethod.isEmpty()) {
+            savedMethod = prefs.getString("method", "");
+            if (savedMethod.isEmpty()) savedMethod = defaultMethod(latitude, longitude);
+        }
+        prefs.edit().putString("location", name)
+                .putString("latitude", String.format(Locale.US, "%.6f", latitude))
+                .putString("longitude", String.format(Locale.US, "%.6f", longitude))
+                .putString("method", savedMethod)
+                .remove("day.date").remove("next.date").remove("attempt.date").remove("weather.date")
+                .putLong("weather.updated", 0L).putLong("weather.attempt", 0L).apply();
+        PrayerAlertScheduler.scheduleNext(this);
+        updatePlaceLabel();
+        status.setText(R.string.prayer_app_location_saved);
+        load();
+    }
+
+    private String defaultMethod(double latitude, double longitude) {
+        return latitude >= 35.8 && latitude <= 42.2 && longitude >= 26.0 && longitude <= 44.8
+                ? "13" : "3";
+    }
+
+    private void showManualLocationPicker() {
         android.content.SharedPreferences prefs = getSharedPreferences("prayer_times", MODE_PRIVATE);
         LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(12); form.setPadding(pad, pad, pad, 0);
@@ -196,7 +362,8 @@ public final class PrayerTimesActivity extends Activity {
         TextView privacy = text(14, 400, 0x99FFFFFF);
         privacy.setPadding(0, dp(10), 0, 0); privacy.setText(R.string.prayer_app_location_privacy); form.addView(privacy);
         int[] ids = getResources().getIntArray(R.array.prayer_app_calculation_method_ids);
-        String selected = prefs.getString("method", "3");
+        String selected = prefs.getString("method", defaultMethod(
+                parseCoordinate(prefs.getString("latitude", ""), 0d), parseCoordinate(prefs.getString("longitude", ""), 0d)));
         for (int i = 0; i < ids.length; i++) if (String.valueOf(ids[i]).equals(selected)) method.setSelection(i);
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.prayer_app_location_setup_title).setView(form)
                 .setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, null).create();
@@ -211,14 +378,19 @@ public final class PrayerTimesActivity extends Activity {
                 place.setError(getString(R.string.prayer_app_location_invalid)); return;
             }
             int choice = Math.max(0, method.getSelectedItemPosition());
-            prefs.edit().putString("location", name).putString("latitude", lat).putString("longitude", lon)
-                    .putString("method", String.valueOf(ids[Math.min(choice, ids.length - 1)]))
-                    .remove("day.date").remove("next.date").remove("attempt.date").remove("weather.date")
-                    .putLong("weather.updated", 0L).putLong("weather.attempt", 0L).apply();
-            PrayerAlertScheduler.scheduleNext(this);
-            updatePlaceLabel(); dialog.dismiss(); status.setText(R.string.prayer_app_location_saved); load();
+            saveLocation(name, latValue, lonValue, String.valueOf(ids[Math.min(choice, ids.length - 1)]));
+            dialog.dismiss();
         }));
         dialog.show();
+    }
+
+    private static double parseCoordinate(String value, double fallback) {
+        try { return Double.parseDouble(value); } catch (NumberFormatException e) { return fallback; }
+    }
+
+    private static final class City {
+        final double latitude, longitude;
+        City(double latitude, double longitude) { this.latitude = latitude; this.longitude = longitude; }
     }
 
     private EditText field(LinearLayout form, int label, String value, int type) {
@@ -254,6 +426,13 @@ public final class PrayerTimesActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                detectCurrentLocation();
+            } else status.setText(R.string.prayer_app_location_permission_denied);
+            return;
+        }
         if (requestCode != 510) return;
         int pending = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("pending_minutes", 0);
         getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).edit().remove("pending_minutes").apply();

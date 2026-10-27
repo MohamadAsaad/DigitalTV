@@ -9,13 +9,12 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Prayer and weather cards use Aladhan and Open-Meteo only after a location is configured. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
-         runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
-         FINE" rule does not apply here. -->
+    <!-- Used for the network pill and one-shot location only after the person chooses automatic location. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
         tools:ignore="CoarseFineLocation" />
     <!-- Puts the remote's accessibility helpers back after a force stop of this app took them off the enabled
