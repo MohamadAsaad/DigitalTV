@@ -341,7 +341,7 @@ public final class PrayerTimesActivity extends Activity {
                 .putString("latitude", String.format(Locale.US, "%.6f", latitude))
                 .putString("longitude", String.format(Locale.US, "%.6f", longitude))
                 .putString("method", savedMethod)
-                .remove("day.date").remove("next.date").remove("attempt.date").remove("weather.date")
+                .remove("day.date").remove("next.date").remove("attempt.date").remove("weather.date").remove("weather.hourly")
                 .putLong("weather.updated", 0L).putLong("weather.attempt", 0L).apply();
         PrayerAlertScheduler.scheduleNext(this);
         updatePlaceLabel();

@@ -202,7 +202,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean weatherCardEnabled;
     private boolean prayerObserverRegistered;
     private static final Uri PRAYER_URI = PrayerTimesRepository.CONTENT_URI;
-    private static final String[] PRAYER_NAMES = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
+    private static final int[] PRAYER_NAME_RES = {R.string.prayer_name_fajr, R.string.prayer_name_dhuhr,
+            R.string.prayer_name_asr, R.string.prayer_name_maghrib, R.string.prayer_name_isha};
     private final ContentObserver prayerObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
         @Override public void onChange(boolean selfChange) { updatePrayerCountdown(); }
     };
@@ -515,7 +516,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         prayerHeadline = findViewById(R.id.prayerHeadline);
         prayerSessions = findViewById(R.id.prayerSessions);
         weatherPanel = findViewById(R.id.weatherPanel);
-        weatherCardEnabled = getResources().getBoolean(R.bool.weather_card);
+        SharedPreferences widgetChoices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        weatherCardEnabled = widgetChoices.getBoolean("home_weather_widget", getResources().getBoolean(R.bool.weather_card));
         if (weatherPanel != null && !weatherCardEnabled) weatherPanel.setVisibility(View.GONE);
         View weatherRefresh = findViewById(R.id.weatherRefresh);
         if (weatherRefresh != null) weatherRefresh.setOnClickListener(v -> {
@@ -526,9 +528,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 ((TextView) findViewById(R.id.weatherUpdated)).setText(R.string.weather_unavailable);
             }
         });
+        if (weatherPanel != null) weatherPanel.setOnClickListener(v ->
+                startActivity(new Intent(this, WeatherForecastActivity.class)));
         root.post(this::positionHomeCards);
-        prayerCardEnabled = getResources().getBoolean(R.bool.prayer_countdown_card);
+        prayerCardEnabled = widgetChoices.getBoolean("home_prayer_widget", getResources().getBoolean(R.bool.prayer_countdown_card));
         if (prayerPanel != null && !prayerCardEnabled) prayerPanel.setVisibility(View.GONE);
+        if (prayerPanel != null) prayerPanel.setOnClickListener(v ->
+                startActivity(new Intent(this, PrayerTimesActivity.class)));
         if (weatherCardEnabled && weatherPanel != null) {
             weatherPanel.setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.weatherKicker)).setText(R.string.weather_panel_title);
@@ -1295,6 +1301,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (!isPrayerLocationConfigured(cursor)) {
                 prayerHeadline.setText(R.string.prayer_setup_home);
                 prayerSessions.setText("");
+                PrayerCountdownRing ring = findViewById(R.id.prayerCountdownRing);
+                if (ring != null) ring.setVisibility(View.GONE);
                 return;
             }
             String[] columns = {"date", "fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha", "tomorrow_fajr"};
@@ -1307,6 +1315,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (!today.equals(values.get("date"))) {
                 prayerHeadline.setText(R.string.prayer_loading);
                 prayerSessions.setText("");
+                PrayerCountdownRing ring = findViewById(R.id.prayerCountdownRing);
+                if (ring != null) ring.setVisibility(View.GONE);
                 return;
             }
             Calendar now = Calendar.getInstance();
@@ -1324,10 +1334,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (nextIndex >= 0) {
                 timeLabel = values.get(keys[nextIndex]);
                 remaining = nextMinutes - nowMinutes;
-                String remainingLabel = remaining >= 60
-                        ? getString(R.string.prayer_countdown_hours, remaining / 60, remaining % 60)
-                        : getString(R.string.prayer_countdown_minutes, remaining);
-                prayerHeadline.setText(getString(R.string.prayer_countdown, PRAYER_NAMES[nextIndex], remainingLabel));
             } else {
                 timeLabel = values.get("tomorrow_fajr");
                 int fajr = parsePrayerMinute(timeLabel);
@@ -1338,10 +1344,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
                 nextIndex = 0;
                 remaining = 24 * 60 - nowMinutes + fajr;
-                prayerHeadline.setText(getString(R.string.prayer_countdown, PRAYER_NAMES[nextIndex],
-                        getString(R.string.prayer_countdown_hours, remaining / 60, remaining % 60)));
             }
-            prayerSessions.setText(getString(R.string.prayer_today_times, timeLabel));
+            prayerKicker.setText(PRAYER_NAME_RES[nextIndex]);
+            prayerHeadline.setText(timeLabel);
+            String remainingLabel = remaining >= 60
+                    ? getString(R.string.prayer_countdown_hours, remaining / 60, remaining % 60)
+                    : getString(R.string.prayer_countdown_minutes, remaining);
+            prayerSessions.setText(getString(R.string.prayer_countdown, getString(R.string.prayer_panel_next), remainingLabel));
+            PrayerCountdownRing ring = findViewById(R.id.prayerCountdownRing);
+            int previous = parsePrayerMinute(values.get(nextIndex == 0 ? "isha" : keys[nextIndex - 1]));
+            int elapsed = previous >= 0 && previous <= nowMinutes ? nowMinutes - previous : 0;
+            if (ring != null) { ring.setVisibility(View.VISIBLE); ring.setCountdown(remaining, Math.max(1, remaining + elapsed)); }
             positionHomeCards();
         } catch (Exception e) {
             if (prayerHeadline != null) prayerHeadline.setText(R.string.prayer_unavailable);

@@ -12,6 +12,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.util.Base64;
 import android.provider.Settings;
 import android.view.View;
@@ -26,10 +27,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
 public final class LauncherSettingsActivity extends Activity {
@@ -57,6 +61,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView wallpaperDimChoice, wallpaperRotationChoice, homeCardOrderChoice, clockContentChoice;
     private TextView clockDigitsChoice, clockFormatChoice, clockBrightnessChoice;
     private TextView dockAppsChoice, performanceChoice, backupExportChoice, backupImportChoice;
+    private TextView prayerWidgetChoice, weatherWidgetChoice, checkUpdatesChoice;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -138,6 +143,12 @@ public final class LauncherSettingsActivity extends Activity {
         homeCardOrderChoice.setOnClickListener(v -> chooseHomeCardOrder());
         TextView prayerSettingsChoice = findViewById(R.id.prayerSettingsChoice);
         prayerSettingsChoice.setOnClickListener(v -> open(new Intent(this, PrayerTimesActivity.class)));
+        prayerWidgetChoice = findViewById(R.id.prayerWidgetChoice);
+        prayerWidgetChoice.setOnClickListener(v -> toggleWidget("home_prayer_widget", R.bool.prayer_countdown_card));
+        weatherWidgetChoice = findViewById(R.id.weatherWidgetChoice);
+        weatherWidgetChoice.setOnClickListener(v -> toggleWidget("home_weather_widget", R.bool.weather_card));
+        checkUpdatesChoice = findViewById(R.id.checkUpdatesChoice);
+        checkUpdatesChoice.setOnClickListener(v -> checkForLauncherUpdate());
         clockContentChoice = findViewById(R.id.clockContentChoice);
         clockContentChoice.setOnClickListener(v -> chooseClockContent());
         clockDigitsChoice = findViewById(R.id.clockDigitsChoice);
@@ -194,6 +205,7 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
+                    .remove("wallpaper_choices").remove("home_prayer_widget").remove("home_weather_widget")
                     .remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY)
                     .remove("home_idle_clock_seconds").remove("wallpaper_dim")
                     .remove("wallpaper_rotation_minutes").remove("home_card_order")
@@ -240,28 +252,57 @@ public final class LauncherSettingsActivity extends Activity {
         for (int i = 0; i < images.size(); i++) labels[i] = wallpaperLabel(images.get(i));
         labels[images.size()] = getString(R.string.wallpaper_none);
         if (hasPicked) labels[images.size() + 1] = getString(R.string.wallpaper_imported);
+        String multi = choices.getString("wallpaper_choices", "");
+        java.util.HashSet<String> selected = new java.util.HashSet<>();
+        if (!multi.isEmpty()) {
+            try { JSONArray saved = new JSONArray(multi); for (int i = 0; i < saved.length(); i++) selected.add(saved.getString(i)); }
+            catch (Exception ignored) { }
+        }
         String current = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
-        int checked = "@device".equals(current) && hasPicked ? images.size() + 1 : "none".equals(current) ? images.size()
-                : indexOf(images, current);
+        if (selected.isEmpty() && current != null && !"none".equals(current)) selected.add(current);
+        String[] keys = new String[labels.length];
+        for (int i = 0; i < images.size(); i++) keys[i] = images.get(i).getName();
+        keys[images.size()] = "none";
+        if (hasPicked) keys[images.size() + 1] = "@device";
+        boolean[] checked = new boolean[keys.length];
+        for (int i = 0; i < keys.length; i++) checked[i] = selected.contains(keys[i]);
         new AlertDialog.Builder(this)
-                .setTitle(R.string.wallpaper_label)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    dialog.dismiss();
-                    if (which == images.size()) {
-                        showWallpaperPreview(null, "none", getString(R.string.wallpaper_none));
-                    } else if (hasPicked && which == images.size() + 1) {
-                        showWallpaperPreview(picked, "@device", getString(R.string.wallpaper_imported));
-                    } else {
-                        showWallpaperPreview(images.get(which), images.get(which).getName(), labels[which]);
+                .setTitle(R.string.wallpaper_multi_label)
+                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
+                    checked[which] = isChecked;
+                    AlertDialog alert = (AlertDialog) dialog;
+                    if (isChecked && "none".equals(keys[which])) {
+                        for (int i = 0; i < checked.length; i++) if (i != which) { checked[i] = false; alert.getListView().setItemChecked(i, false); }
+                    } else if (isChecked) {
+                        int noneIndex = images.size(); checked[noneIndex] = false; alert.getListView().setItemChecked(noneIndex, false);
                     }
                 })
-                .setNeutralButton(R.string.wallpaper_theme_default, (dialog, which) -> {
-                    choices.edit().remove(Config.WALLPAPER_CHOICE_KEY).apply();
-                    changed();
-                    refresh();
+                .setPositiveButton(R.string.wallpaper_apply, (dialog, which) -> {
+                    ArrayList<String> selectedKeys = new ArrayList<>();
+                    for (int i = 0; i < checked.length; i++) if (checked[i] && !"none".equals(keys[i])) selectedKeys.add(keys[i]);
+                    if (selectedKeys.isEmpty()) {
+                        choices.edit().remove("wallpaper_choices").putString(Config.WALLPAPER_CHOICE_KEY, "none").apply();
+                        changed(); refresh(); return;
+                    }
+                    String first = selectedKeys.get(0);
+                    File firstFile = "@device".equals(first) ? picked : WallpaperRotation.find(images, first);
+                    String json = new JSONArray(selectedKeys).toString();
+                    if (selectedKeys.size() > 1 && choices.getInt("wallpaper_rotation_minutes", -2) <= 0)
+                        choices.edit().putInt("wallpaper_rotation_minutes", 15).apply();
+                    String label = "@device".equals(first) ? getString(R.string.wallpaper_imported)
+                            : firstFile == null ? first : wallpaperLabel(firstFile);
+                    showWallpaperPreview(firstFile, first, label, null, json);
                 })
-                .setPositiveButton(R.string.wallpaper_from_device, (dialog, which) -> openDeviceWallpaperPicker())
-                .setNegativeButton(android.R.string.cancel, null)
+                .setNegativeButton(R.string.wallpaper_from_device, (dialog, which) -> {
+                    JSONArray pending = new JSONArray();
+                    for (int i = 0; i < checked.length; i++) if (checked[i] && !"none".equals(keys[i])) pending.put(keys[i]);
+                    choices.edit().putString("wallpaper_pending_choices", pending.toString()).apply();
+                    openDeviceWallpaperPicker();
+                })
+                .setNeutralButton(R.string.wallpaper_theme_default, (dialog, which) -> {
+                    choices.edit().remove(Config.WALLPAPER_CHOICE_KEY).remove("wallpaper_choices").apply();
+                    changed(); refresh();
+                })
                 .show();
     }
 
@@ -270,6 +311,10 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     private void showWallpaperPreview(File file, String choice, String label, File pendingImport) {
+        showWallpaperPreview(file, choice, label, pendingImport, null);
+    }
+
+    private void showWallpaperPreview(File file, String choice, String label, File pendingImport, String selectedJson) {
         LinearLayout frame = new LinearLayout(this);
         frame.setGravity(android.view.Gravity.CENTER);
         frame.setBackgroundColor(Color.BLACK);
@@ -299,10 +344,19 @@ public final class LauncherSettingsActivity extends Activity {
                         } catch (Exception e) { Toast.makeText(this, R.string.wallpaper_import_failed, Toast.LENGTH_LONG).show(); return; }
                         pendingImport.delete();
                     }
-                    choices.edit().putString(Config.WALLPAPER_CHOICE_KEY, choice).apply();
+                    SharedPreferences.Editor edit = choices.edit();
+                    if (selectedJson != null) {
+                        edit.putString("wallpaper_choices", selectedJson).remove(Config.WALLPAPER_CHOICE_KEY);
+                        try { if (new JSONArray(selectedJson).length() > 1 && choices.getInt("wallpaper_rotation_minutes", -2) <= 0)
+                            edit.putInt("wallpaper_rotation_minutes", 15); } catch (Exception ignored) { }
+                    } else edit.putString(Config.WALLPAPER_CHOICE_KEY, choice).remove("wallpaper_choices");
+                    edit.remove("wallpaper_pending_choices");
+                    edit.apply();
                     changed(); refresh(); Toast.makeText(this, R.string.wallpaper_applied, Toast.LENGTH_SHORT).show();
                 }).setNegativeButton(android.R.string.cancel, (d,w) -> { if (pendingImport != null) pendingImport.delete(); }).create();
-        previewDialog.setOnCancelListener(d -> { if (pendingImport != null) pendingImport.delete(); });
+        previewDialog.setOnCancelListener(d -> {
+            if (pendingImport != null) { pendingImport.delete(); choices.edit().remove("wallpaper_pending_choices").apply(); }
+        });
         previewDialog.show();
     }
 
@@ -321,6 +375,65 @@ public final class LauncherSettingsActivity extends Activity {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         try { startActivityForResult(intent, PICK_WALLPAPER); }
         catch (ActivityNotFoundException e) { Toast.makeText(this, R.string.not_available, Toast.LENGTH_LONG).show(); }
+    }
+
+    private void toggleWidget(String key, int defaultResource) {
+        boolean enabled = choices.getBoolean(key, getResources().getBoolean(defaultResource));
+        choices.edit().putBoolean(key, !enabled).apply();
+        changed(); refresh();
+    }
+
+    private void checkForLauncherUpdate() {
+        checkUpdatesChoice.setText(R.string.check_updates_checking);
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            String version = "";
+            boolean valid = false;
+            int latestCode = -1, installedCode = -1;
+            try {
+                URL url = new URL("https://github.com/MohamadAsaad/DigitalTV/releases/latest/download/update-manifest.json");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(12000); connection.setReadTimeout(15000); connection.setInstanceFollowRedirects(true);
+                connection.setRequestProperty("User-Agent", "DigitalTV-Launcher/1.0 AndroidTV");
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) throw new java.io.IOException("GitHub release unavailable");
+                try (InputStream in = connection.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                    byte[] buffer = new byte[4096]; int total = 0;
+                    for (int n; (n = in.read(buffer)) != -1;) {
+                        total += n; if (total > 256 * 1024) throw new java.io.IOException("Update manifest too large");
+                        out.write(buffer, 0, n);
+                    }
+                    JSONObject manifest = new JSONObject(out.toString("UTF-8"));
+                    if (manifest.optInt("schema") != 1 || !"com.gathin.tvhome".equals(manifest.optString("packageName")))
+                        throw new java.io.IOException("Unexpected release manifest");
+                    latestCode = manifest.getInt("versionCode");
+                    version = manifest.getString("versionName");
+                    if (latestCode < 1 || version.trim().isEmpty()) throw new java.io.IOException("Invalid release version");
+                    android.content.pm.PackageInfo installed = getPackageManager().getPackageInfo(getPackageName(), 0);
+                    installedCode = Build.VERSION.SDK_INT >= 28 ? (int) installed.getLongVersionCode() : installed.versionCode;
+                    valid = true;
+                }
+            } catch (Exception ignored) {
+            } finally { if (connection != null) connection.disconnect(); }
+            final boolean ok = valid;
+            final boolean update = valid && latestCode > installedCode;
+            final String foundVersion = version;
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                int message = !ok ? R.string.check_updates_failed : update ? R.string.check_updates_available : R.string.check_updates_latest;
+                String body = !ok ? getString(message) : update
+                        ? getString(message, foundVersion, getPackageVersionName()) : getString(message, getPackageVersionName());
+                AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle(R.string.check_updates_label).setMessage(body);
+                if (update) dialog.setPositiveButton(R.string.check_updates_open, (d, w) -> open(new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/MohamadAsaad/DigitalTV/releases/latest"))));
+                dialog.setNegativeButton(android.R.string.ok, null).show();
+                refresh();
+            });
+        }, "digitaltv-update-check").start();
+    }
+
+    private String getPackageVersionName() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (PackageManager.NameNotFoundException ignored) { return "?"; }
     }
 
     private void showIdleClockPicker() {
@@ -348,9 +461,11 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     private void chooseWallpaperRotation() {
-        int[] values = {-2, 0, 15, 30, 60};
+        int[] values = {-2, 0, 5, 10, 15, 30, 60, 120};
         int[] ids = {R.string.wallpaper_rotation_theme, R.string.wallpaper_rotation_off,
-                R.string.wallpaper_rotation_15m, R.string.wallpaper_rotation_30m, R.string.wallpaper_rotation_60m};
+                R.string.wallpaper_rotation_5m, R.string.wallpaper_rotation_10m,
+                R.string.wallpaper_rotation_15m, R.string.wallpaper_rotation_30m,
+                R.string.wallpaper_rotation_60m, R.string.wallpaper_rotation_120m};
         String[] labels = new String[ids.length]; for (int i = 0; i < ids.length; i++) labels[i] = getString(ids[i]);
         singleChoice(R.string.wallpaper_rotation_label, labels, closest(values, choices.getInt("wallpaper_rotation_minutes", -2)), i -> {
             choices.edit().putInt("wallpaper_rotation_minutes", values[i]).apply(); changed(); refresh();
@@ -429,12 +544,15 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     private static final String[] BACKUP_KEYS = {"columns", Config.ROWS_BELOW_DOCK_KEY, "animations", "advanced_effects",
-            Config.WALLPAPER_CHOICE_KEY, Config.DOCK_OPACITY_KEY, OpenOnStart.KEY, "home_idle_clock_seconds",
+            Config.WALLPAPER_CHOICE_KEY, "wallpaper_choices", "home_prayer_widget", "home_weather_widget", Config.DOCK_OPACITY_KEY, OpenOnStart.KEY, "home_idle_clock_seconds",
             "wallpaper_dim", "wallpaper_rotation_minutes", "home_card_order", "clock_show_prayer", "clock_show_date",
             "clock_content_order", "clock_digit_style", "clock_format", "clock_brightness", "reduced_motion"};
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_WALLPAPER && (resultCode != RESULT_OK || data == null || data.getData() == null)) {
+            choices.edit().remove("wallpaper_pending_choices").apply(); return;
+        }
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
         if (requestCode == PICK_WALLPAPER) { importWallpaper(uri); return; }
@@ -453,7 +571,17 @@ public final class LauncherSettingsActivity extends Activity {
                 total += n; if (total > 20L * 1024 * 1024) throw new java.io.IOException("Image exceeds 20 MB");
                 out.write(buffer, 0, n);
             }
-            showWallpaperPreview(candidate, "@device", getString(R.string.wallpaper_imported), candidate);
+            String selectedJson = null;
+            String existing = choices.getString("wallpaper_choices", "");
+            if (existing.isEmpty()) existing = choices.getString("wallpaper_pending_choices", "");
+            if (!existing.isEmpty()) {
+                JSONArray selected = new JSONArray(existing);
+                boolean containsDevice = false;
+                for (int i = 0; i < selected.length(); i++) if ("@device".equals(selected.optString(i))) containsDevice = true;
+                if (!containsDevice) selected.put("@device");
+                selectedJson = selected.toString();
+            }
+            showWallpaperPreview(candidate, "@device", getString(R.string.wallpaper_imported), candidate, selectedJson);
         } catch (Exception e) { candidate.delete(); Toast.makeText(this, R.string.wallpaper_import_failed, Toast.LENGTH_LONG).show(); }
     }
 
@@ -616,11 +744,16 @@ public final class LauncherSettingsActivity extends Activity {
         advancedChoice.setEnabled(animations);
         advancedChoice.setAlpha(animations ? 1f : 0.5f);
         String wallpaperCurrent = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
-        wallpaperChoice.setText(getString(R.string.wallpaper_state,
-                "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
-                        : "@device".equals(wallpaperCurrent) ? getString(R.string.wallpaper_imported)
-                        : wallpaperCurrent != null ? wallpaperCurrent
-                        : getString(R.string.wallpaper_theme_default)));
+        String multiWallpaper = choices.getString("wallpaper_choices", "");
+        String wallpaperLabel = getString(R.string.wallpaper_theme_default);
+        if (!multiWallpaper.isEmpty()) {
+            try { wallpaperLabel = getResources().getQuantityString(R.plurals.wallpaper_selected_count,
+                    new JSONArray(multiWallpaper).length(), new JSONArray(multiWallpaper).length()); }
+            catch (Exception ignored) { wallpaperLabel = getString(R.string.wallpaper_theme_default); }
+        } else wallpaperLabel = "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
+                : "@device".equals(wallpaperCurrent) ? getString(R.string.wallpaper_imported)
+                : wallpaperCurrent != null ? wallpaperCurrent : getString(R.string.wallpaper_theme_default);
+        wallpaperChoice.setText(getString(R.string.wallpaper_state, wallpaperLabel));
         int idle = choices.getInt("home_idle_clock_seconds", getResources().getInteger(R.integer.home_idle_clock_seconds));
         int idleLabel = idle == 0 ? R.string.home_idle_clock_off : idle <= 15 ? R.string.home_idle_clock_15s
                 : idle <= 30 ? R.string.home_idle_clock_30s : idle <= 45 ? R.string.home_idle_clock_45s
@@ -633,11 +766,18 @@ public final class LauncherSettingsActivity extends Activity {
                 choices.getInt("wallpaper_dim", -1) < 0 ? getString(R.string.wallpaper_rotation_theme) : dim + "%"));
         int rotation = choices.getInt("wallpaper_rotation_minutes", -2);
         int rotationLabel = rotation == -2 ? R.string.wallpaper_rotation_theme : rotation == 0 ? R.string.wallpaper_rotation_off
-                : rotation <= 15 ? R.string.wallpaper_rotation_15m : rotation <= 30 ? R.string.wallpaper_rotation_30m : R.string.wallpaper_rotation_60m;
+                : rotation <= 5 ? R.string.wallpaper_rotation_5m : rotation <= 10 ? R.string.wallpaper_rotation_10m
+                : rotation <= 15 ? R.string.wallpaper_rotation_15m : rotation <= 30 ? R.string.wallpaper_rotation_30m
+                : rotation <= 60 ? R.string.wallpaper_rotation_60m : R.string.wallpaper_rotation_120m;
         wallpaperRotationChoice.setText(getString(R.string.wallpaper_rotation_state, getString(rotationLabel)));
         int cardOrder = choices.getInt("home_card_order", 0);
         homeCardOrderChoice.setText(getString(R.string.home_card_order_state,
                 getString(cardOrder == 0 ? R.string.home_card_prayer_weather : R.string.home_card_weather_prayer)));
+        prayerWidgetChoice.setText(getString(R.string.prayer_widget_state,
+                getString(choices.getBoolean("home_prayer_widget", getResources().getBoolean(R.bool.prayer_countdown_card)) ? R.string.on : R.string.off)));
+        weatherWidgetChoice.setText(getString(R.string.weather_widget_state,
+                getString(choices.getBoolean("home_weather_widget", getResources().getBoolean(R.bool.weather_card)) ? R.string.on : R.string.off)));
+        checkUpdatesChoice.setText(R.string.check_updates_label);
         int clockOrder = choices.getInt("clock_content_order", 0);
         boolean showDate = choices.getBoolean("clock_show_date", true), showPrayer = choices.getBoolean("clock_show_prayer", false);
         int clockLabel = !showDate && !showPrayer ? R.string.clock_content_time_only
@@ -664,10 +804,12 @@ public final class LauncherSettingsActivity extends Activity {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
+                || choices.contains("wallpaper_choices")
                 || choices.contains(OpenOnStart.KEY) || choices.contains("home_idle_clock_seconds")
                 || choices.contains("wallpaper_dim") || choices.contains("wallpaper_rotation_minutes")
                 || choices.contains("home_card_order") || choices.contains("clock_show_prayer")
                 || choices.contains("clock_show_date") || choices.contains("clock_digit_style")
+                || choices.contains("home_prayer_widget") || choices.contains("home_weather_widget")
                 || choices.contains("clock_format") || choices.contains("clock_brightness") || choices.contains("reduced_motion");
     }
 

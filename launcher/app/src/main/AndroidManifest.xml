@@ -113,6 +113,12 @@
             android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
+        <activity
+            android:name=".WeatherForecastActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
         <provider
             android:name=".PrayerTimesProvider"
             android:authorities="com.gathin.tvhome.prayer.times"

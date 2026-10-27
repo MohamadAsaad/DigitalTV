@@ -24,7 +24,7 @@ final class PrayerTimesRepository {
     static final String[] COLUMNS = {"date", "fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha",
             "tomorrow_fajr", "place", "method", "hijri", "weather_date", "weather_temp", "weather_code",
             "weather_max", "weather_min", "weather_rain", "weather_error", "weather_updated",
-            "weather_tomorrow_code", "weather_tomorrow_max", "weather_tomorrow_min"};
+            "weather_tomorrow_code", "weather_tomorrow_max", "weather_tomorrow_min", "weather_hourly"};
     private static final String TAG = "PrayerTimes";
     private static final String PREFS = "prayer_times";
     private static final String[] KEYS = {"fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"};
@@ -143,6 +143,7 @@ final class PrayerTimesRepository {
         row[19] = prefs.getString("weather.tomorrow.code", "");
         row[20] = prefs.getString("weather.tomorrow.max", "");
         row[21] = prefs.getString("weather.tomorrow.min", "");
+        row[22] = prefs.getString("weather.hourly", "[]");
         return row;
     }
 
@@ -168,7 +169,8 @@ final class PrayerTimesRepository {
                 if (lat.isEmpty() || lon.isEmpty()) throw new IllegalStateException("Set your location first");
                 String timezone = java.net.URLEncoder.encode(java.time.ZoneId.systemDefault().getId(), "UTF-8");
                 String endpoint = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
-                        + "&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                        + "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability"
+                        + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                         + "&timezone=" + timezone + "&forecast_days=2";
                 connection = (HttpURLConnection) new URL(endpoint).openConnection();
                 connection.setConnectTimeout(8000); connection.setReadTimeout(8000);
@@ -180,8 +182,21 @@ final class PrayerTimesRepository {
                     ByteArrayOutputStream out = new ByteArrayOutputStream(); byte[] buffer = new byte[4096];
                     for (int n; (n = in.read(buffer)) > 0;) out.write(buffer, 0, n);
                     JSONObject json = new JSONObject(out.toString("UTF-8"));
-                    JSONObject current = json.getJSONObject("current"), daily = json.getJSONObject("daily");
+                    JSONObject current = json.getJSONObject("current"), daily = json.getJSONObject("daily"), hourly = json.getJSONObject("hourly");
                     String date = daily.getJSONArray("time").getString(0);
+                    org.json.JSONArray hourlyRows = new org.json.JSONArray();
+                    org.json.JSONArray hourlyTimes = hourly.getJSONArray("time");
+                    org.json.JSONArray hourlyTemps = hourly.getJSONArray("temperature_2m");
+                    org.json.JSONArray hourlyCodes = hourly.getJSONArray("weather_code");
+                    org.json.JSONArray hourlyRain = hourly.getJSONArray("precipitation_probability");
+                    for (int i = 0; i < hourlyTimes.length(); i++) {
+                        JSONObject item = new JSONObject();
+                        item.put("time", hourlyTimes.getString(i));
+                        item.put("temperature", Math.round(hourlyTemps.getDouble(i)));
+                        item.put("code", hourlyCodes.optInt(i, -1));
+                        item.put("rain", hourlyRain.optInt(i, 0));
+                        hourlyRows.put(item);
+                    }
                     prefs.edit().putString("weather.date", date)
                             .putString("weather.temp", String.valueOf(Math.round(current.getDouble("temperature_2m"))))
                             .putString("weather.code", String.valueOf(current.getInt("weather_code")))
@@ -191,6 +206,7 @@ final class PrayerTimesRepository {
                             .putString("weather.tomorrow.code", String.valueOf(daily.getJSONArray("weather_code").optInt(1, 0)))
                             .putString("weather.tomorrow.max", String.valueOf(Math.round(daily.getJSONArray("temperature_2m_max").getDouble(1))))
                             .putString("weather.tomorrow.min", String.valueOf(Math.round(daily.getJSONArray("temperature_2m_min").getDouble(1))))
+                            .putString("weather.hourly", hourlyRows.toString())
                             .putBoolean("weather.error", false)
                             .putLong("weather.updated", System.currentTimeMillis()).apply();
                 }
