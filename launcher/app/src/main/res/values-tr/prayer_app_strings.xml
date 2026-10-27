@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="prayer_app_location_use_current">Mevcut cihaz konumunu kullan</string>
+    <string name="prayer_app_location_continue">Devam</string>
     <string name="prayer_app_location_choose_city">Şehir seç</string>
     <string name="prayer_app_location_manual">Koordinatları elle gir (gelişmiş)</string>
     <string name="prayer_app_location_current">Mevcut konum</string>
