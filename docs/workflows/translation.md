@@ -14,6 +14,8 @@
      true for a right-to-left language (`values-iw`).
    - `fonts.xml`: point `font_body`, `font_regular` and the other `font_*` at the system families when the
      bundled Outfit has no glyphs for the language's letters (`values-vi`, #833).
+   - `prayer_app_strings.xml`: location, prayer-time and weather labels shown by the built-in cards and
+     prayer screen; translate the default file when adding a locale (`values-ar`, `values-tr`).
    - `lunar.xml`: the lunar date format, the leap-month wording and the stem and branch names, for a
      language that names them itself (`values-zh-rCN`, `values-vi`, `values-ko`). Keep `lunar_stems` at ten
      items and `lunar_branches` at twelve: `Lunar.java` indexes both by position, so a short list crashes
@@ -26,7 +28,7 @@
    needs its strings in every locale.
 6. Moving hard-coded text into resources is welcome; do not bundle unrelated build changes with it.
 7. Check the size gate before you push. A language's strings ship in the release APK, and that APK has to
-   stay under 589,824 B (576 KB): `launcher/app/build/outputs/apk/release/app-release.apk`, measured with
+   stay under 655,360 B (640 KB): `launcher/app/build/outputs/apk/release/app-release.apk`, measured with
    `stat -c %s` on Linux or `stat -f %z` on macOS, and checked by the "Launcher build and unit tests" job
    on every pull request. `README.md` quotes the launcher at about 532 KB, so a full language can be the
    difference between green and a failed build. A language that does not fit is a maintainer decision, not
