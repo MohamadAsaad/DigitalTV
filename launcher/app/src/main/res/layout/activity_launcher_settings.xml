@@ -28,6 +28,10 @@
             android:text="@string/reorder"
             android:visibility="gone" />
 
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
+            android:text="@string/settings_section_layout" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -88,18 +92,34 @@
             <TextView android:id="@+id/dock30" style="@style/SettingsColumnChoice" android:text="30%" />
         </LinearLayout>
 
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_wallpaper" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
+
         <TextView
             android:id="@+id/wallpaperChoice"
             style="@style/SettingsRow"
-            android:layout_marginTop="28dp" />
+            android:layout_marginTop="10dp" />
 
         <TextView android:id="@+id/wallpaperDimChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/wallpaperRotationChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_home_info" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
         <TextView android:id="@+id/homeCardOrderChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/prayerWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/weatherWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_prayer" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
         <TextView android:id="@+id/prayerSettingsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" android:text="@string/prayer_settings_label" />
         <TextView android:id="@+id/checkUpdatesChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_clock" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
         <TextView android:id="@+id/clockContentChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/clockDigitsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/clockFormatChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
@@ -111,9 +131,19 @@
             style="@style/SettingsRow"
             android:layout_marginTop="18dp" />
 
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_performance" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
         <TextView android:id="@+id/performanceChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/backupExportChoice" style="@style/SettingsRow" android:layout_marginTop="28dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_backup" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
+        <TextView android:id="@+id/backupExportChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/backupImportChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_advanced" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
 
         <TextView
             android:id="@+id/animationsChoice"

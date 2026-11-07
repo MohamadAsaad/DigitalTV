@@ -195,6 +195,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    private View homeInfoStrip;
     private View prayerPanel;
     private View weatherPanel;
     private TextView prayerKicker, prayerHeadline, prayerSessions;
@@ -511,6 +512,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
+        homeInfoStrip = findViewById(R.id.homeInfoStrip);
         prayerPanel = findViewById(R.id.prayerPanel);
         prayerKicker = findViewById(R.id.prayerKicker);
         prayerHeadline = findViewById(R.id.prayerHeadline);
@@ -1293,6 +1295,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
             if (!prayerCardEnabled || prayerPanel == null) return;
             prayerPanel.setVisibility(View.VISIBLE);
+            positionHomeCards();
             if (cursor == null || !cursor.moveToFirst()) {
                 prayerHeadline.setText(R.string.prayer_loading);
                 prayerSessions.setText("");
@@ -1393,21 +1396,45 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void positionHomeCards() {
-        if (root == null || root.getWidth() == 0) return;
-        boolean prayerLeft = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).getInt("home_card_order", 0) == 0;
+        if (root == null || root.getWidth() == 0 || homeInfoStrip == null) return;
+        boolean prayer = prayerPanel != null && prayerPanel.getVisibility() == View.VISIBLE;
+        boolean weather = weatherPanel != null && weatherPanel.getVisibility() == View.VISIBLE;
+        boolean both = prayer && weather;
+        homeInfoStrip.setVisibility(prayer || weather ? View.VISIBLE : View.GONE);
+        View divider = findViewById(R.id.homeInfoDivider);
+        if (divider != null) divider.setVisibility(both ? View.VISIBLE : View.GONE);
+        int inset = (int) (52 * density);
         int top = (int) ((racePanel != null && racePanel.getVisibility() == View.VISIBLE ? 286 : 158) * density);
-        int inset = (int) (60 * density), gap = (int) (20 * density);
-        boolean both = prayerPanel != null && weatherPanel != null
-                && prayerPanel.getVisibility() == View.VISIBLE && weatherPanel.getVisibility() == View.VISIBLE;
-        int width = Math.max(0, root.getWidth() - inset * 2 - (both ? gap : 0));
-        if (both) width /= 2;
-        placeHomeCard(prayerPanel, prayerLeft, top, width);
-        placeHomeCard(weatherPanel, !prayerLeft, top, width);
-        int textWidth = Math.max(0, width - (int) (52 * density));
+        int width = Math.max(0, root.getWidth() - inset * 2);
+        int maxStrip = Math.min((int) (root.getWidth() * 0.48f), (int) (820 * density));
+        width = Math.min(width, both ? maxStrip : Math.min(maxStrip, (int) (460 * density)));
+        FrameLayout.LayoutParams strip = (FrameLayout.LayoutParams) homeInfoStrip.getLayoutParams();
+        if (strip.gravity != (Gravity.TOP | Gravity.END) || strip.topMargin != top || strip.rightMargin != inset || strip.width != width) {
+            strip.gravity = Gravity.TOP | Gravity.END;
+            strip.topMargin = top;
+            strip.rightMargin = inset;
+            strip.width = width;
+            homeInfoStrip.setLayoutParams(strip);
+        }
+        setStripChildWidth(prayerPanel, prayer, both ? 1f : 0f);
+        setStripChildWidth(weatherPanel, weather, both ? 1f : 0f);
+        int textWidth = Math.max(0, width / (both ? 2 : 1) - (int) (100 * density));
         setCardTextWidth(prayerPanel, textWidth, R.id.prayerKicker, R.id.prayerHeadline, R.id.prayerSessions);
-        setCardTextWidth(weatherPanel, textWidth, R.id.weatherKicker, R.id.weatherSessions, R.id.weatherTomorrow,
-                R.id.weatherUpdated);
-        setCardTextWidth(weatherPanel, Math.max(0, textWidth - (int) (48 * density)), R.id.weatherHeadline);
+        setCardTextWidth(weatherPanel, textWidth, R.id.weatherKicker, R.id.weatherSessions);
+        setCardTextWidth(weatherPanel, textWidth, R.id.weatherHeadline);
+    }
+
+    private void setStripChildWidth(View child, boolean visible, float weight) {
+        if (child == null || !visible) return;
+        ViewGroup.LayoutParams raw = child.getLayoutParams();
+        if (!(raw instanceof LinearLayout.LayoutParams)) return;
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) raw;
+        int width = weight > 0 ? 0 : ViewGroup.LayoutParams.WRAP_CONTENT;
+        if (lp.width != width || lp.weight != weight) {
+            lp.width = width;
+            lp.weight = weight;
+            child.setLayoutParams(lp);
+        }
     }
 
     private void setCardTextWidth(View card, int width, int... ids) {
@@ -1418,18 +1445,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 text.setMaxWidth(width);
                 text.setEllipsize(TextUtils.TruncateAt.END);
             }
-        }
-    }
-
-    private void placeHomeCard(View card, boolean left, int top, int width) {
-        if (card == null || !(card.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
-        int gravity = Gravity.TOP | (left ? Gravity.LEFT : Gravity.RIGHT);
-        int inset = (int) (60 * density);
-        if (lp.gravity != gravity || lp.topMargin != top || lp.leftMargin != inset || lp.rightMargin != inset
-                || lp.width != width) {
-            lp.gravity = gravity; lp.topMargin = top; lp.leftMargin = inset; lp.rightMargin = inset; lp.width = width;
-            card.setLayoutParams(lp);
         }
     }
 

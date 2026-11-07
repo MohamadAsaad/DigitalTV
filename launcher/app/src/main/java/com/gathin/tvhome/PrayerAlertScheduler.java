@@ -34,24 +34,36 @@ final class PrayerAlertScheduler {
         PrayerTimesRepository.Snapshot data = PrayerTimesRepository.read(context);
         if (data == null) return;
         int lead = prefs.getInt("minutes", 10);
-        String[] names = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
+        int[] nameIds = {R.string.prayer_name_fajr, R.string.prayer_name_dhuhr, R.string.prayer_name_asr,
+                R.string.prayer_name_maghrib, R.string.prayer_name_isha};
         String[] keys = {data.times[0], data.times[2], data.times[3], data.times[4], data.times[5]};
+        boolean[] allowed = new boolean[5];
+        for (int i = 0; i < allowed.length; i++) allowed[i] = prefs.getBoolean("prayer_" + i, true);
         Calendar now = Calendar.getInstance();
         int minuteNow = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
         long fireAt = -1; String prayer = "";
         for (int i = 0; i < keys.length; i++) {
+            if (!allowed[i]) continue;
             int minute = parse(keys[i]);
             if (minute > minuteNow + lead) {
-                fireAt = atMinute(now, minute) - lead * 60_000L;
-                prayer = names[i]; break;
+                long candidate = atMinute(now, minute) - lead * 60_000L;
+                if (isQuiet(prefs, candidate)) continue;
+                fireAt = candidate;
+                prayer = context.getString(nameIds[i]);
+                intent.putExtra(PrayerAlertReceiver.EXTRA_PRAYER_INDEX, i);
+                break;
             }
         }
-        if (fireAt < 0) {
+        if (fireAt < 0 && allowed[0]) {
             int fajr = parse(data.tomorrowFajr);
             if (fajr >= 0) {
                 Calendar tomorrow = (Calendar) now.clone(); tomorrow.add(Calendar.DAY_OF_YEAR, 1);
-                fireAt = atMinute(tomorrow, fajr) - lead * 60_000L;
-                prayer = "الفجر";
+                long candidate = atMinute(tomorrow, fajr) - lead * 60_000L;
+                if (!isQuiet(prefs, candidate)) {
+                    fireAt = candidate;
+                    prayer = context.getString(nameIds[0]);
+                    intent.putExtra(PrayerAlertReceiver.EXTRA_PRAYER_INDEX, 0);
+                }
             }
         }
         if (fireAt <= System.currentTimeMillis()) return;
@@ -68,6 +80,17 @@ final class PrayerAlertScheduler {
         } else {
             alarms.setExact(AlarmManager.RTC_WAKEUP, fireAt, pending);
         }
+    }
+
+    private static boolean isQuiet(SharedPreferences prefs, long at) {
+        if (!prefs.getBoolean("quiet_enabled", false)) return false;
+        Calendar time = Calendar.getInstance();
+        time.setTimeInMillis(at);
+        int minute = time.get(Calendar.HOUR_OF_DAY) * 60 + time.get(Calendar.MINUTE);
+        int start = prefs.getInt("quiet_start", 22 * 60);
+        int end = prefs.getInt("quiet_end", 7 * 60);
+        if (start == end) return true;
+        return start < end ? minute >= start && minute < end : minute >= start || minute < end;
     }
 
     private static long atMinute(Calendar day, int minute) {

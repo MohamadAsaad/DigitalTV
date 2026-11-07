@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.TimePickerDialog;
 import android.Manifest;
 import android.content.Context;
 import android.graphics.Typeface;
@@ -26,6 +27,8 @@ import android.widget.EditText;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.CheckBox;
+import android.widget.Switch;
 import android.text.InputType;
 import android.annotation.SuppressLint;
 
@@ -67,6 +70,7 @@ public final class PrayerTimesActivity extends Activity {
     private Typeface font;
     private int accent;
     private TextView dates, next, status, alertChoice, placeLabel;
+    private TextView alertOptionsChoice;
     private LinearLayout rows;
     /** Today's times as minutes after midnight, in NAMES order; null until loaded. */
     private int[] minutes;
@@ -126,6 +130,11 @@ public final class PrayerTimesActivity extends Activity {
         alertChoice.setPadding(0, dp(14), 0, dp(8));
         alertChoice.setOnClickListener(v -> showAlertPicker());
         col.addView(alertChoice);
+        alertOptionsChoice = text(16, 500, 0xFFB9C9D7);
+        alertOptionsChoice.setFocusable(true); alertOptionsChoice.setClickable(true);
+        alertOptionsChoice.setPadding(0, dp(6), 0, dp(10));
+        alertOptionsChoice.setOnClickListener(v -> showAlertOptions());
+        col.addView(alertOptionsChoice);
 
         next = text(52, 300, 0xFFFFFFFF);
         next.setPadding(0, dp(10), 0, dp(4));
@@ -153,6 +162,7 @@ public final class PrayerTimesActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateAlertLabel();
+        updateAlertOptionsLabel();
         if (!observerRegistered) {
             getContentResolver().registerContentObserver(PrayerTimesRepository.CONTENT_URI, false, scheduleObserver);
             observerRegistered = true;
@@ -406,13 +416,13 @@ public final class PrayerTimesActivity extends Activity {
     }
 
     private void showAlertPicker() {
-        String[] labels = {getString(R.string.off), getString(R.string.prayer_app_prayer_alert_10),
+        String[] labels = {getString(R.string.off), getString(R.string.prayer_app_prayer_alert_5), getString(R.string.prayer_app_prayer_alert_10),
                 getString(R.string.prayer_app_prayer_alert_15), getString(R.string.prayer_app_prayer_alert_30)};
         int current = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getBoolean("enabled", false)
                 ? getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("minutes", 10) : 0;
-        int checked = current == 10 ? 1 : current == 15 ? 2 : current == 30 ? 3 : 0;
+        int checked = current == 5 ? 1 : current == 10 ? 2 : current == 15 ? 3 : current == 30 ? 4 : 0;
         new AlertDialog.Builder(this).setTitle(R.string.prayer_app_prayer_alert_label).setSingleChoiceItems(labels, checked, (dialog, which) -> {
-            dialog.dismiss(); int minutes = which == 0 ? 0 : which == 1 ? 10 : which == 2 ? 15 : 30;
+            dialog.dismiss(); int minutes = which == 0 ? 0 : which == 1 ? 5 : which == 2 ? 10 : which == 3 ? 15 : 30;
             if (minutes == 0) { PrayerAlertScheduler.set(this, 0); updateAlertLabel(); return; }
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 510);
@@ -428,6 +438,84 @@ public final class PrayerTimesActivity extends Activity {
                 ? getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE).getInt("minutes", 10) : 0;
         alertChoice.setText(getString(R.string.prayer_app_prayer_alert_state, minutes == 0 ? getString(R.string.off)
                 : getString(R.string.prayer_app_prayer_alert_before, minutes)));
+    }
+
+    private void showAlertOptions() {
+        final android.content.SharedPreferences prefs = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE);
+        final boolean[] selected = new boolean[5];
+        final int[] prayerIds = {R.string.prayer_name_fajr, R.string.prayer_name_dhuhr, R.string.prayer_name_asr,
+                R.string.prayer_name_maghrib, R.string.prayer_name_isha};
+        for (int i = 0; i < selected.length; i++) selected[i] = prefs.getBoolean("prayer_" + i, true);
+        final int[] quietStart = {prefs.getInt("quiet_start", 22 * 60)};
+        final int[] quietEnd = {prefs.getInt("quiet_end", 7 * 60)};
+        final boolean[] quietEnabled = {prefs.getBoolean("quiet_enabled", false)};
+        final boolean[] soundEnabled = {prefs.getBoolean("sound", false)};
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(24), dp(8), dp(24), dp(4));
+        TextView prayerTitle = text(16, 500, 0xFFFFFFFF);
+        prayerTitle.setText(R.string.prayer_alert_select_prayers);
+        content.addView(prayerTitle);
+        CheckBox[] prayerChecks = new CheckBox[5];
+        for (int i = 0; i < prayerChecks.length; i++) {
+            CheckBox box = new CheckBox(this);
+            box.setText(prayerIds[i]); box.setChecked(selected[i]); box.setTextColor(0xFFFFFFFF);
+            box.setFocusable(true); box.setMinHeight(dp(48));
+            prayerChecks[i] = box; content.addView(box);
+        }
+        Switch quiet = new Switch(this);
+        quiet.setText(R.string.prayer_alert_quiet_hours);
+        quiet.setTextColor(0xFFFFFFFF); quiet.setChecked(quietEnabled[0]);
+        quiet.setFocusable(true); quiet.setMinHeight(dp(52)); content.addView(quiet);
+        LinearLayout times = new LinearLayout(this);
+        times.setOrientation(LinearLayout.HORIZONTAL);
+        TextView start = text(16, 500, 0xFFB9C9D7), end = text(16, 500, 0xFFB9C9D7);
+        start.setFocusable(true); start.setClickable(true); start.setPadding(dp(8), dp(10), dp(8), dp(10));
+        end.setFocusable(true); end.setClickable(true); end.setPadding(dp(8), dp(10), dp(8), dp(10));
+        Runnable updateTimes = () -> {
+            start.setText(getString(R.string.prayer_alert_quiet_start, formatMinute(quietStart[0])));
+            end.setText(getString(R.string.prayer_alert_quiet_end, formatMinute(quietEnd[0])));
+        };
+        start.setOnClickListener(v -> chooseQuietTime(quietStart, updateTimes));
+        end.setOnClickListener(v -> chooseQuietTime(quietEnd, updateTimes));
+        times.addView(start, new LinearLayout.LayoutParams(0, -2, 1));
+        times.addView(end, new LinearLayout.LayoutParams(0, -2, 1));
+        content.addView(times); updateTimes.run();
+        Switch sound = new Switch(this);
+        sound.setText(R.string.prayer_alert_sound);
+        sound.setTextColor(0xFFFFFFFF); sound.setChecked(soundEnabled[0]);
+        sound.setFocusable(true); sound.setMinHeight(dp(52)); content.addView(sound);
+
+        new AlertDialog.Builder(this).setTitle(R.string.prayer_alert_options)
+                .setView(content)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    android.content.SharedPreferences.Editor edit = prefs.edit();
+                    for (int i = 0; i < prayerChecks.length; i++) edit.putBoolean("prayer_" + i, prayerChecks[i].isChecked());
+                    edit.putBoolean("quiet_enabled", quiet.isChecked()).putInt("quiet_start", quietStart[0])
+                            .putInt("quiet_end", quietEnd[0]).putBoolean("sound", sound.isChecked()).apply();
+                    PrayerAlertScheduler.scheduleNext(this);
+                    updateAlertOptionsLabel();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void chooseQuietTime(int[] minute, Runnable update) {
+        int value = minute[0];
+        new TimePickerDialog(this, (view, hour, selectedMinute) -> {
+            minute[0] = hour * 60 + selectedMinute; update.run();
+        }, value / 60, value % 60, true).show();
+    }
+
+    private String formatMinute(int minute) {
+        return String.format(Locale.getDefault(), "%02d:%02d", minute / 60, minute % 60);
+    }
+
+    private void updateAlertOptionsLabel() {
+        android.content.SharedPreferences prefs = getSharedPreferences(PrayerAlertScheduler.PREFS, MODE_PRIVATE);
+        boolean quiet = prefs.getBoolean("quiet_enabled", false);
+        alertOptionsChoice.setText(getString(R.string.prayer_alert_options_state,
+                getString(quiet ? R.string.prayer_alert_quiet_hours_on : R.string.prayer_alert_quiet_hours_off),
+                getString(prefs.getBoolean("sound", false) ? R.string.on : R.string.off)));
     }
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {

@@ -3,6 +3,7 @@ package com.gathin.tvhome;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -32,6 +33,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -362,6 +364,7 @@ public final class LauncherSettingsActivity extends Activity {
 
     private String wallpaperLabel(File file) {
         String name = file.getName();
+        if (name.startsWith("device-")) return getString(R.string.wallpaper_imported);
         if (name.equals("builtin-moon-lake.jpg")) return getString(R.string.wallpaper_builtin_moon);
         if (name.equals("builtin-dunes.jpg")) return getString(R.string.wallpaper_builtin_dunes);
         if (name.equals("builtin-golden-coast.jpg")) return getString(R.string.wallpaper_builtin_coast);
@@ -372,9 +375,61 @@ public final class LauncherSettingsActivity extends Activity {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         try { startActivityForResult(intent, PICK_WALLPAPER); }
         catch (ActivityNotFoundException e) { Toast.makeText(this, R.string.not_available, Toast.LENGTH_LONG).show(); }
+    }
+
+    private void importWallpapers(Uri single, ClipData clips) {
+        File dir = Config.dir(this);
+        File collection = dir == null ? null : new File(dir, "wallpapers");
+        if (collection == null || (!collection.isDirectory() && !collection.mkdirs())) {
+            Toast.makeText(this, R.string.wallpaper_import_failed, Toast.LENGTH_LONG).show(); return;
+        }
+        ArrayList<Uri> uris = new ArrayList<>();
+        if (clips != null) {
+            for (int i = 0; i < clips.getItemCount() && i < 20; i++) {
+                Uri uri = clips.getItemAt(i).getUri(); if (uri != null) uris.add(uri);
+            }
+        }
+        if (uris.isEmpty() && single != null) uris.add(single);
+        if (uris.isEmpty()) { Toast.makeText(this, R.string.wallpaper_import_failed, Toast.LENGTH_LONG).show(); return; }
+
+        JSONArray selected = new JSONArray();
+        String old = choices.getString("wallpaper_choices", "");
+        if (old.isEmpty()) old = choices.getString("wallpaper_pending_choices", "");
+        try { if (!old.isEmpty()) selected = new JSONArray(old); } catch (Exception ignored) { }
+        File first = null;
+        ArrayList<File> imported = new ArrayList<>();
+        long stamp = System.currentTimeMillis();
+        try {
+            for (int i = 0; i < uris.size(); i++) {
+                String name = String.format(Locale.ROOT, "device-%013d-%02d.jpg", stamp, i);
+                File target = new File(collection, name);
+                try (InputStream in = getContentResolver().openInputStream(uris.get(i));
+                     FileOutputStream out = new FileOutputStream(target)) {
+                    if (in == null) throw new java.io.IOException("No image stream");
+                    byte[] buffer = new byte[8192]; long total = 0;
+                    for (int n; (n = in.read(buffer)) > 0;) {
+                        total += n;
+                        if (total > 10L * 1024 * 1024) throw new java.io.IOException("Image exceeds 10 MB");
+                        out.write(buffer, 0, n);
+                    }
+                    if (total == 0) throw new java.io.IOException("Empty image");
+                } catch (Exception error) { target.delete(); throw error; }
+                imported.add(target);
+                selected.put(name);
+                if (first == null) first = target;
+            }
+            choices.edit().remove("wallpaper_pending_choices").apply();
+            String label = getString(R.string.wallpaper_imported_count, uris.size());
+            showWallpaperPreview(first, label, label, null, selected.toString());
+        } catch (Exception e) {
+            for (File file : imported) file.delete();
+            choices.edit().remove("wallpaper_pending_choices").apply();
+            Toast.makeText(this, R.string.wallpaper_import_failed, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void toggleWidget(String key, int defaultResource) {
@@ -550,12 +605,13 @@ public final class LauncherSettingsActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_WALLPAPER && (resultCode != RESULT_OK || data == null || data.getData() == null)) {
+        if (requestCode == PICK_WALLPAPER && (resultCode != RESULT_OK || data == null
+                || (data.getData() == null && data.getClipData() == null))) {
             choices.edit().remove("wallpaper_pending_choices").apply(); return;
         }
-        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (resultCode != RESULT_OK || data == null || (data.getData() == null && data.getClipData() == null)) return;
         Uri uri = data.getData();
-        if (requestCode == PICK_WALLPAPER) { importWallpaper(uri); return; }
+        if (requestCode == PICK_WALLPAPER) { importWallpapers(uri, data.getClipData()); return; }
         if (requestCode == EXPORT_BACKUP) { exportBackup(uri); return; }
         if (requestCode == IMPORT_BACKUP) importBackup(uri);
     }

@@ -40,9 +40,21 @@
     <string name="prayer_app_prayer_alert_state">Prayer reminder: %1$s</string>
     <string name="prayer_app_prayer_alert_before">%1$d minutes before prayer</string>
     <string name="prayer_app_prayer_alert_10">10 minutes before</string>
+    <string name="prayer_app_prayer_alert_5">5 minutes before</string>
     <string name="prayer_app_prayer_alert_15">15 minutes before</string>
     <string name="prayer_app_prayer_alert_30">30 minutes before</string>
     <string name="prayer_app_prayer_alert_notification_title">Prayer soon</string>
     <string name="prayer_app_prayer_alert_notification_text">%1$s begins in %2$d minutes</string>
     <string name="prayer_app_prayer_alert_permission">Allow notifications in Android settings to receive prayer reminders.</string>
+    <string name="prayer_alert_options">Reminder appearance</string>
+    <string name="prayer_alert_options_state">Details: quiet hours %1$s · sound %2$s</string>
+    <string name="prayer_alert_select_prayers">Show reminders for</string>
+    <string name="prayer_alert_quiet_hours">Quiet hours</string>
+    <string name="prayer_alert_quiet_hours_on">on</string>
+    <string name="prayer_alert_quiet_hours_off">off</string>
+    <string name="prayer_alert_quiet_start">Start %1$s</string>
+    <string name="prayer_alert_quiet_end">End %1$s</string>
+    <string name="prayer_alert_sound">Play a gentle sound</string>
+    <string name="prayer_alert_silent_channel">Prayer reminders (silent)</string>
+    <string name="prayer_alert_sound_channel">Prayer reminders (with sound)</string>
 </resources>

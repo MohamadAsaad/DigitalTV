@@ -115,6 +115,7 @@
     <string name="wallpaper_from_device">اختيار صورة من الجهاز…</string>
     <string name="wallpaper_state">الخلفية: %1$s</string>
     <string name="wallpaper_imported">تم اختيار الخلفية</string>
+    <string name="wallpaper_imported_count">معاينة %1$d صور محددة</string>
     <string name="wallpaper_import_failed">تعذّر استخدام هذه الصورة</string>
     <string name="home_idle_clock_label">ساعة الخمول</string>
     <string name="home_idle_clock_state">ساعة الخمول: %1$s</string>
@@ -162,6 +163,14 @@
     <string name="clock_brightness_label">سطوع الساعة</string><string name="clock_brightness_state">سطوع الساعة: %1$d٪</string>
     <string name="clock_next_prayer">الصلاة القادمة · %1$s بعد %2$s</string><string name="clock_fajr_tomorrow">الصلاة القادمة · الفجر غدًا %1$s</string>
     <string name="prayer_name_fajr">الفجر</string><string name="prayer_name_dhuhr">الظهر</string><string name="prayer_name_asr">العصر</string><string name="prayer_name_maghrib">المغرب</string><string name="prayer_name_isha">العشاء</string>
+    <string name="settings_section_layout">تخطيط التطبيقات والشريط السفلي</string>
+    <string name="settings_section_wallpaper">الخلفية والمظهر</string>
+    <string name="settings_section_home_info">شريط معلومات الشاشة الرئيسية</string>
+    <string name="settings_section_prayer">الصلاة والتحديثات</string>
+    <string name="settings_section_clock">ساعة الخمول</string>
+    <string name="settings_section_performance">الأداء</string>
+    <string name="settings_section_backup">النسخ الاحتياطي والاستعادة</string>
+    <string name="settings_section_advanced">التأثيرات المرئية والخيارات المتقدمة</string>
     <string name="dock_apps_settings">اختيار تطبيقات الشريط وترتيبها</string><string name="performance_state">تقليل الحركة: %1$s</string><string name="performance_label">أداء التلفاز</string>
     <string name="backup_export">نسخ إعدادات المشغّل احتياطيًا…</string><string name="backup_import">استعادة إعدادات المشغّل…</string>
     <string name="backup_export_done">تم حفظ النسخة الاحتياطية</string><string name="backup_import_done">تمت استعادة الإعدادات</string><string name="backup_failed">تعذرت قراءة ملف النسخة أو حفظه</string>

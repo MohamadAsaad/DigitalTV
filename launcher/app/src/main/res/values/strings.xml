@@ -163,6 +163,7 @@
     <string name="prayer_countdown_minutes">%1$d min</string>
     <string name="wallpaper_from_device">Choose from device…</string>
     <string name="wallpaper_imported">Wallpaper selected</string>
+    <string name="wallpaper_imported_count">Preview of %1$d selected images</string>
     <string name="wallpaper_import_failed">Could not use that image</string>
     <string name="home_idle_clock_label">Idle clock</string>
     <string name="home_idle_clock_state">Idle clock: %1$s</string>
@@ -211,6 +212,14 @@
     <string name="clock_brightness_label">Clock brightness</string><string name="clock_brightness_state">Clock brightness: %1$d%%</string>
     <string name="clock_next_prayer">Next prayer · %1$s in %2$s</string><string name="clock_fajr_tomorrow">Next prayer · Fajr tomorrow %1$s</string>
     <string name="prayer_name_fajr">Fajr</string><string name="prayer_name_dhuhr">Dhuhr</string><string name="prayer_name_asr">Asr</string><string name="prayer_name_maghrib">Maghrib</string><string name="prayer_name_isha">Isha</string>
+    <string name="settings_section_layout">Layout and dock</string>
+    <string name="settings_section_wallpaper">Wallpaper and appearance</string>
+    <string name="settings_section_home_info">Home information bar</string>
+    <string name="settings_section_prayer">Prayer and updates</string>
+    <string name="settings_section_clock">Idle clock</string>
+    <string name="settings_section_performance">Performance</string>
+    <string name="settings_section_backup">Backup and restore</string>
+    <string name="settings_section_advanced">Visual effects and advanced options</string>
     <string name="dock_apps_settings">Choose and arrange dock apps</string><string name="performance_state">Reduced motion: %1$s</string><string name="performance_label">TV performance</string>
     <string name="backup_export">Back up launcher settings…</string><string name="backup_import">Restore launcher settings…</string>
     <string name="backup_export_done">Backup saved</string><string name="backup_import_done">Settings restored</string><string name="backup_failed">Could not read or write this backup</string>

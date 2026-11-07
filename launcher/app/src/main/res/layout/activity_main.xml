@@ -94,113 +94,92 @@
             android:letterSpacing="0.12" />
     </LinearLayout>
 
-    <!-- Home prayer countdown, backed by the launcher's local daily cache. -->
+    <!-- Compact, shared home information strip. Each segment keeps independent focus and click actions. -->
     <LinearLayout
-        android:id="@+id/prayerPanel"
+        android:id="@+id/homeInfoStrip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|right"
-        android:layout_marginEnd="60dp"
+        android:layout_gravity="top|end"
         android:layout_marginTop="158dp"
-        android:background="@drawable/home_prayer_card_background"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="18dp"
-        android:paddingBottom="18dp"
-        android:focusable="true"
-        android:clickable="true"
-        android:contentDescription="@string/prayer_panel_open"
+        android:padding="5dp"
+        android:background="@drawable/home_info_strip_background"
         android:visibility="gone">
-
-        <com.gathin.tvhome.PrayerCountdownRing
-            android:id="@+id/prayerCountdownRing"
-            android:layout_width="82dp"
-            android:layout_height="82dp"
-            android:layout_marginEnd="20dp"
-            android:importantForAccessibility="no"
-            android:visibility="gone" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/prayerPanel"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="right">
-            <TextView
-                android:id="@+id/prayerKicker"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:textColor="#FFD77A"
-                android:textSize="13sp"
-                android:fontFamily="@string/font_medium" />
-            <TextView
-                android:id="@+id/prayerHeadline"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:singleLine="true"
-                android:textColor="#FFFFFFFF"
-                android:textSize="28sp"
-                android:fontFamily="@string/font_medium"
-                android:includeFontPadding="false" />
-            <TextView
-                android:id="@+id/prayerSessions"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:singleLine="true"
-                android:textColor="#B3FFFFFF"
-                android:textSize="16sp"
-                android:fontFamily="@string/font_light" />
-        </LinearLayout>
-    </LinearLayout>
+            android:background="@drawable/home_prayer_card_background"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:contentDescription="@string/prayer_panel_open"
+            android:visibility="gone">
 
-    <LinearLayout
-        android:id="@+id/weatherPanel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|left"
-        android:layout_marginStart="60dp"
-        android:layout_marginTop="158dp"
-        android:background="@drawable/home_weather_card_background"
-        android:orientation="vertical"
-        android:gravity="left"
-        android:paddingStart="24dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="15dp"
-        android:focusable="true"
-        android:clickable="true"
-        android:contentDescription="@string/weather_panel_open"
-        android:visibility="gone">
-        <TextView android:id="@+id/weatherKicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:singleLine="true" android:textColor="#B3FFFFFF" android:textSize="12sp"
-            android:fontFamily="@string/font_medium" android:letterSpacing="0.16" />
-        <LinearLayout android:id="@+id/weatherNowRow" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="6dp" android:orientation="horizontal" android:gravity="center_vertical">
-            <ImageView android:id="@+id/weatherIcon" android:layout_width="38dp" android:layout_height="38dp"
-                android:layout_marginEnd="12dp" android:contentDescription="@null" />
-            <TextView android:id="@+id/weatherHeadline" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:singleLine="true" android:textColor="#FFFFFFFF" android:textSize="25sp"
-                android:fontFamily="@string/font_light" android:includeFontPadding="false" />
+            <com.gathin.tvhome.PrayerCountdownRing
+                android:id="@+id/prayerCountdownRing"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="12dp"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="end">
+                <TextView android:id="@+id/prayerKicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:singleLine="true" android:textColor="#FFFFD77A" android:textSize="13sp"
+                    android:fontFamily="@string/font_medium" />
+                <TextView android:id="@+id/prayerHeadline" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp" android:singleLine="true" android:textColor="#FFFFFFFF"
+                    android:textSize="22sp" android:fontFamily="@string/font_medium" android:includeFontPadding="false" />
+                <TextView android:id="@+id/prayerSessions" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp" android:singleLine="true" android:textColor="#CCFFFFFF"
+                    android:textSize="13sp" android:fontFamily="@string/font_light" />
+            </LinearLayout>
         </LinearLayout>
-        <TextView android:id="@+id/weatherSessions" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" android:singleLine="true" android:textColor="#99FFFFFF"
-            android:textSize="12sp" android:fontFamily="@string/font_medium" />
-        <TextView android:id="@+id/weatherTomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="5dp" android:singleLine="true" android:textColor="#99FFFFFF"
-            android:textSize="12sp" android:fontFamily="@string/font_medium" />
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
-            android:orientation="horizontal" android:gravity="center_vertical">
-            <TextView android:id="@+id/weatherUpdated" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:singleLine="true" android:textColor="#66FFFFFF" android:textSize="10sp" />
-            <TextView android:id="@+id/weatherRefresh" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:minWidth="48dp" android:minHeight="40dp" android:paddingStart="8dp" android:paddingEnd="8dp"
-                android:gravity="center" android:focusable="true" android:clickable="true" android:text="↻"
-                android:textColor="#FFFFFFFF" android:textSize="20sp" android:contentDescription="@string/weather_refresh" />
+
+        <View android:id="@+id/homeInfoDivider" android:layout_width="1dp" android:layout_height="38dp"
+            android:layout_marginStart="4dp" android:layout_marginEnd="4dp" android:background="#55FFFFFF" />
+
+        <LinearLayout
+            android:id="@+id/weatherPanel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/home_weather_card_background"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:contentDescription="@string/weather_panel_open"
+            android:visibility="gone">
+            <ImageView android:id="@+id/weatherIcon" android:layout_width="38dp" android:layout_height="38dp"
+                android:layout_marginEnd="10dp" android:contentDescription="@null" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:id="@+id/weatherKicker" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:singleLine="true" android:textColor="#B3FFFFFF" android:textSize="12sp" android:fontFamily="@string/font_medium" />
+                <TextView android:id="@+id/weatherHeadline" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:singleLine="true" android:textColor="#FFFFFFFF" android:textSize="19sp"
+                    android:fontFamily="@string/font_medium" android:includeFontPadding="false" />
+                <TextView android:id="@+id/weatherSessions" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp" android:singleLine="true" android:textColor="#AAFFFFFF"
+                    android:textSize="11sp" android:fontFamily="@string/font_light" />
+            </LinearLayout>
+            <TextView android:id="@+id/weatherTomorrow" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <TextView android:id="@+id/weatherUpdated" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <TextView android:id="@+id/weatherRefresh" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 
