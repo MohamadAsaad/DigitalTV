@@ -142,6 +142,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private RecyclerView grid;
     private FrameLayout root;
     private WallpaperPlayer wallpaperPlayer;
+    private WallpaperVideoPlayer wallpaperVideoPlayer;
     private GlassView glass;
     private View ambient;
     private TextView heroName;
@@ -201,6 +202,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView prayerKicker, prayerHeadline, prayerSessions;
     private boolean prayerCardEnabled;
     private boolean weatherCardEnabled;
+    private boolean homeClockVisible = true;
+    private boolean homeDateVisible = true;
+    private boolean homeGreetingVisible = true;
+    private boolean homeAppTitleVisible = true;
+    private boolean homeShortcutsVisible = true;
+    private boolean homeAppGridVisible = true;
+    private boolean homeRaceVisible = true;
+    private String homeThemeStyle = "basic";
     private boolean prayerObserverRegistered;
     private static final Uri PRAYER_URI = PrayerTimesRepository.CONTENT_URI;
     private static final int[] PRAYER_NAME_RES = {R.string.prayer_name_fajr, R.string.prayer_name_dhuhr,
@@ -408,6 +417,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        SharedPreferences homeChoices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        String chosenTheme = homeChoices.getString("home_theme_style", "");
+        homeThemeStyle = chosenTheme.isEmpty() ? (cfg.cinematicHome ? "cinematic" : "basic") : chosenTheme;
+        homeClockVisible = homeChoices.getBoolean("home_show_clock", true);
+        homeDateVisible = homeChoices.getBoolean("home_show_date", true);
+        homeGreetingVisible = homeChoices.getBoolean("home_show_greeting", cfg.showGreeting);
+        homeAppTitleVisible = homeChoices.getBoolean("home_show_app_title", cfg.dockTitle);
+        homeShortcutsVisible = homeChoices.getBoolean("home_show_shortcuts", true);
+        homeAppGridVisible = homeChoices.getBoolean("home_show_apps", true);
+        homeRaceVisible = homeChoices.getBoolean("home_show_race", true);
         homeAppKeys = RemoteKeys.parseAppKeys(cfg.appKeys);
         appLibrarySelection = cfg.appLibrarySelection;
         libraryOkOpens = cfg.libraryOkOpens;
@@ -450,17 +469,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        wallpaperVideoPlayer = new WallpaperVideoPlayer(this, root, () -> {
+            homeChoices.edit().putBoolean("wallpaper_video_enabled", false).apply();
+            wallpaperPlayer.update();
+            Toast.makeText(this, R.string.video_wallpaper_playback_failed, Toast.LENGTH_LONG).show();
+        });
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
         if (festive) glass.setAccent(festival.accentColor());
+        else if ("nocturne".equals(homeThemeStyle)) glass.setAccent(0xFFE3B75C);
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
         // a fade renders it into a full-screen offscreen buffer first.
         ambient.forceHasOverlappingRendering(false);
         ambientGlow = cfg.ambientGlow;
-        appGlow = cfg.appGlow;
+        appGlow = cfg.appGlow && !"nocturne".equals(homeThemeStyle);
         if (!ambientGlow) ambient.setVisibility(View.GONE);
         heroName = findViewById(R.id.heroName);
         hero = findViewById(R.id.hero);
@@ -470,7 +495,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroMeta = findViewById(R.id.heroMeta);
         heroDots = findViewById(R.id.heroDots);
         heroArt = findViewById(R.id.heroArt);
-        cinematic = cfg.cinematicHome;
+        cinematic = "cinematic".equals(homeThemeStyle);
         glowStyle = cfg.glowStyle;
         heroDotsShown = cfg.cinematicDots;
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
@@ -478,11 +503,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
-        if (!cfg.dockTitle) hero.setVisibility(View.GONE);
+        if (!homeAppTitleVisible) hero.setVisibility(View.GONE);
         greeting = findViewById(R.id.greeting);
         clockBlock = findViewById(R.id.leftBlock);
         greetingColor = greeting.getCurrentTextColor();
-        if (!cfg.showGreeting) greeting.setVisibility(View.GONE);
+        if (!homeGreetingVisible) greeting.setVisibility(View.GONE);
         if (cfg.headerWhite) {
             // The clock's own white for the date and the line before it, instead of their dimmed whites.
             ((TextView) findViewById(R.id.date)).setTextColor(Color.WHITE);
@@ -518,6 +543,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         prayerHeadline = findViewById(R.id.prayerHeadline);
         prayerSessions = findViewById(R.id.prayerSessions);
         weatherPanel = findViewById(R.id.weatherPanel);
+        if ("nocturne".equals(homeThemeStyle)) applyNocturneSurfaces();
         SharedPreferences widgetChoices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         weatherCardEnabled = widgetChoices.getBoolean("home_weather_widget", getResources().getBoolean(R.bool.weather_card));
         if (weatherPanel != null && !weatherCardEnabled) weatherPanel.setVisibility(View.GONE);
@@ -542,7 +568,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ((TextView) findViewById(R.id.weatherKicker)).setText(R.string.weather_panel_title);
             ((TextView) findViewById(R.id.weatherHeadline)).setText(R.string.weather_loading);
         }
-        showStats = cfg.showStats;
+        showStats = homeChoices.getBoolean("home_show_stats", cfg.showStats);
         inputsConnectedOnly = cfg.inputsConnectedOnly;
         shamsi = cfg.shamsiDate;
         lunarDate = findViewById(R.id.lunarDate);
@@ -565,6 +591,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hiddenApps = new HashSet<>(cfg.hiddenApps);
 
         grid = findViewById(R.id.grid);
+        if (!homeAppGridVisible) grid.setVisibility(View.GONE);
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
         // single_row: one span laid out sideways, so the same adapter, glass and dock band serve a scrolling row.
@@ -824,6 +851,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
 
+        // Keep the Settings entry available, while letting the other top-row shortcuts be hidden together.
+        if (!homeShortcutsVisible) {
+            btnInputs.setVisibility(View.GONE);
+            btnWifi.setVisibility(View.GONE);
+            btnVpn.setVisibility(View.GONE);
+            btnReorder.setVisibility(View.GONE);
+            btnLibraryTop.setVisibility(View.GONE);
+            for (View button : topAppButtons) button.setVisibility(View.GONE);
+        }
+
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction.
         boolean rtlMenuBar = getResources().getBoolean(R.bool.rtl_menu_bar);
@@ -1039,6 +1076,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (showStats) startStats();
         sky.update();
         wallpaperPlayer.start();
+        wallpaperVideoPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -1215,6 +1253,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
+        wallpaperVideoPlayer.stop();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -1473,6 +1512,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtCache.clear();
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
+        wallpaperVideoPlayer.releaseForMemoryPressure();
         tileRefresh.invalidate();
     }
 
@@ -1491,6 +1531,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onDestroy();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
+        wallpaperVideoPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -2700,6 +2741,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void focusTile(int position) {
+        if (!homeAppGridVisible) {
+            focusHomeContent();
+            return;
+        }
         libraryFocusPending = false;
         cancelPendingFocusScroll();
         if (adapter.appCount() == 0) {
@@ -2748,13 +2793,54 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void updateClockVisibility() {
         boolean valid = System.currentTimeMillis() >= TIME_VALID_AFTER_MS;
-        clockBlock.setVisibility(valid ? View.VISIBLE : View.INVISIBLE);
+        boolean showClock = valid && homeClockVisible;
+        boolean showDate = valid && homeDateVisible;
+        findViewById(R.id.clock).setVisibility(showClock ? View.VISIBLE : View.GONE);
+        findViewById(R.id.ampm).setVisibility(showClock ? View.VISIBLE : View.GONE);
+        findViewById(R.id.clockDivider).setVisibility(showClock && showDate ? View.VISIBLE : View.GONE);
+        findViewById(R.id.date).setVisibility(showDate ? View.VISIBLE : View.GONE);
+        if (shamsiDate != null) shamsiDate.setVisibility(showDate && shamsi ? View.VISIBLE : View.GONE);
+        if (lunarDate != null) lunarDate.setVisibility(showDate && lunar ? View.VISIBLE : View.GONE);
+        greeting.setVisibility(valid && homeGreetingVisible ? View.VISIBLE : View.GONE);
+        boolean showHeader = valid && (homeClockVisible || homeDateVisible || homeGreetingVisible);
+        clockBlock.setVisibility(showHeader ? View.VISIBLE : View.GONE);
         handler.removeCallbacks(clockCheck);
         if (valid) {
-            updateGreeting();
+            if (homeGreetingVisible) updateGreeting();
         } else {
             handler.postDelayed(clockCheck, 1_000L);
         }
+    }
+
+    private void focusHomeContent() {
+        if (prayerPanel != null && prayerPanel.getVisibility() == View.VISIBLE && prayerPanel.requestFocus()) return;
+        if (weatherPanel != null && weatherPanel.getVisibility() == View.VISIBLE && weatherPanel.requestFocus()) return;
+        View settings = findViewById(R.id.btnSettings);
+        if (settings != null) settings.requestFocus();
+    }
+
+    private GradientDrawable nocturneSurface(int fill, int stroke) {
+        float d = getResources().getDisplayMetrics().density;
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(fill);
+        drawable.setCornerRadius(14f * d);
+        drawable.setStroke(Math.max(1, Math.round(d)), stroke);
+        return drawable;
+    }
+
+    private void applyNocturneSurfaces() {
+        int fill = 0xE6101422;
+        int edge = 0xB5D7B45F;
+        if (homeInfoStrip != null) homeInfoStrip.setBackground(nocturneSurface(fill, edge));
+        if (prayerPanel != null) prayerPanel.setBackground(nocturneSurface(0xF1181A27, 0x70D7B45F));
+        if (weatherPanel != null) weatherPanel.setBackground(nocturneSurface(0xF1181A27, 0x70D7B45F));
+        View divider = findViewById(R.id.homeInfoDivider);
+        if (divider != null) divider.setBackgroundColor(0x99D7B45F);
+        if (prayerKicker != null) prayerKicker.setTextColor(0xFFFFD982);
+        greetingColor = 0xFFE9C879;
+        if (greeting != null) greeting.setTextColor(greetingColor);
+        TextView date = findViewById(R.id.date);
+        if (date != null) date.setTextColor(0xFFD6D0C0);
     }
 
     private void updateGreeting() {
@@ -2815,6 +2901,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * nothing animates, so the panel costs the GPU nothing between ticks.
      */
     private void updateRace() {
+        if (!homeRaceVisible) {
+            racePanel.setVisibility(View.GONE);
+            positionHomeCards();
+            return;
+        }
         // an empty calendar (a theme without race_calendar, or a reset) hides a panel the last theme showed
         RaceWeekend.State s = raceCalendar.isEmpty() ? null : RaceWeekend.at(raceCalendar, java.time.Instant.now());
         if (s == null) {

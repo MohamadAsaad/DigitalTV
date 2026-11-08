@@ -816,7 +816,11 @@ final class Config {
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
                     .remove(DOCK_OPACITY_KEY).remove("home_idle_clock_seconds").remove("wallpaper_dim")
                     .remove("wallpaper_rotation_minutes").remove("home_card_order").remove("clock_show_prayer")
-                    .remove("clock_show_date").remove("clock_content_order").remove("reduced_motion");
+                    .remove("clock_show_date").remove("clock_content_order").remove("reduced_motion")
+                    .remove("home_theme_style").remove("wallpaper_video_enabled")
+                    .remove("home_show_clock").remove("home_show_date").remove("home_show_greeting")
+                    .remove("home_show_app_title").remove("home_show_shortcuts").remove("home_show_apps")
+                    .remove("home_show_stats").remove("home_show_race");
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
             choices.edit().remove("columns").remove("animations").remove("advanced_effects")
@@ -824,6 +828,10 @@ final class Config {
                     .remove("home_idle_clock_seconds")
                     .remove("wallpaper_dim").remove("wallpaper_rotation_minutes").remove("home_card_order")
                     .remove("clock_show_prayer").remove("clock_show_date").remove("reduced_motion")
+                    .remove("home_theme_style").remove("wallpaper_video_enabled")
+                    .remove("home_show_clock").remove("home_show_date").remove("home_show_greeting")
+                    .remove("home_show_app_title").remove("home_show_shortcuts").remove("home_show_apps")
+                    .remove("home_show_stats").remove("home_show_race")
                     .putString(THEME_SIGNATURE_KEY, signature).commit();
         }
     }

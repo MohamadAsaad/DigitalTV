@@ -93,6 +93,11 @@
         </LinearLayout>
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
+            android:text="@string/settings_section_theme" android:textColor="#FFFFD27A" android:textSize="15sp"
+            android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
+        <TextView android:id="@+id/homeThemeChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
             android:text="@string/settings_section_wallpaper" android:textColor="#FFFFD27A" android:textSize="15sp"
             android:fontFamily="@string/font_medium" android:letterSpacing="0.10" />
 
@@ -101,6 +106,7 @@
             style="@style/SettingsRow"
             android:layout_marginTop="10dp" />
 
+        <TextView android:id="@+id/wallpaperVideoChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/wallpaperDimChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/wallpaperRotationChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
 
@@ -110,6 +116,17 @@
         <TextView android:id="@+id/homeCardOrderChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/prayerWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/weatherWidgetChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp"
+            android:text="@string/home_elements_label" android:textColor="#FFFFFFFF" android:textSize="18sp"
+            android:fontFamily="@string/font_medium" />
+        <TextView android:id="@+id/homeClockChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeDateChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeGreetingChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeAppTitleChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeShortcutsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeAppsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeStatsChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/homeRaceChoice" style="@style/SettingsRow" android:layout_marginTop="8dp" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp"
             android:text="@string/settings_section_prayer" android:textColor="#FFFFD27A" android:textSize="15sp"

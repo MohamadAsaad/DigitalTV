@@ -11,6 +11,7 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Build;
@@ -40,6 +41,7 @@ import org.json.JSONArray;
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
 public final class LauncherSettingsActivity extends Activity {
     private static final int PICK_WALLPAPER = 41;
+    private static final int PICK_WALLPAPER_VIDEO = 45;
     private static final int EXPORT_BACKUP = 43;
     private static final int IMPORT_BACKUP = 44;
     @Override
@@ -55,6 +57,7 @@ public final class LauncherSettingsActivity extends Activity {
     private static final int[] DOCK_OPACITIES = {100, 70, 50, 30};
     private final TextView[] dockChoices = new TextView[DOCK_OPACITIES.length];
     private TextView wallpaperChoice;
+    private TextView wallpaperVideoChoice, homeThemeChoice;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -64,6 +67,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView clockDigitsChoice, clockFormatChoice, clockBrightnessChoice;
     private TextView dockAppsChoice, performanceChoice, backupExportChoice, backupImportChoice;
     private TextView prayerWidgetChoice, weatherWidgetChoice, checkUpdatesChoice;
+    private HomeToggle[] homeToggles;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -135,6 +139,10 @@ public final class LauncherSettingsActivity extends Activity {
         }
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
+        wallpaperVideoChoice = findViewById(R.id.wallpaperVideoChoice);
+        wallpaperVideoChoice.setOnClickListener(v -> showVideoWallpaperOptions());
+        homeThemeChoice = findViewById(R.id.homeThemeChoice);
+        homeThemeChoice.setOnClickListener(v -> chooseHomeTheme());
         homeIdleClockChoice = findViewById(R.id.homeIdleClockChoice);
         homeIdleClockChoice.setOnClickListener(v -> showIdleClockPicker());
         wallpaperDimChoice = findViewById(R.id.wallpaperDimChoice);
@@ -149,6 +157,16 @@ public final class LauncherSettingsActivity extends Activity {
         prayerWidgetChoice.setOnClickListener(v -> toggleWidget("home_prayer_widget", R.bool.prayer_countdown_card));
         weatherWidgetChoice = findViewById(R.id.weatherWidgetChoice);
         weatherWidgetChoice.setOnClickListener(v -> toggleWidget("home_weather_widget", R.bool.weather_card));
+        homeToggles = new HomeToggle[] {
+                bindHomeToggle(R.id.homeClockChoice, "home_show_clock", R.string.home_element_clock, true),
+                bindHomeToggle(R.id.homeDateChoice, "home_show_date", R.string.home_element_date, true),
+                bindHomeToggle(R.id.homeGreetingChoice, "home_show_greeting", R.string.home_element_greeting, config.showGreeting),
+                bindHomeToggle(R.id.homeAppTitleChoice, "home_show_app_title", R.string.home_element_app_title, config.dockTitle),
+                bindHomeToggle(R.id.homeShortcutsChoice, "home_show_shortcuts", R.string.home_element_shortcuts, true),
+                bindHomeToggle(R.id.homeAppsChoice, "home_show_apps", R.string.home_element_apps, true),
+                bindHomeToggle(R.id.homeStatsChoice, "home_show_stats", R.string.home_element_stats, config.showStats),
+                bindHomeToggle(R.id.homeRaceChoice, "home_show_race", R.string.home_element_race, true)
+        };
         checkUpdatesChoice = findViewById(R.id.checkUpdatesChoice);
         checkUpdatesChoice.setOnClickListener(v -> checkForLauncherUpdate());
         clockContentChoice = findViewById(R.id.clockContentChoice);
@@ -214,7 +232,10 @@ public final class LauncherSettingsActivity extends Activity {
                     .remove("clock_show_prayer").remove("clock_show_date")
                     .remove("clock_content_order").remove("clock_digit_style").remove("clock_format")
                     .remove("clock_brightness")
-                    .remove("reduced_motion").commit();
+                    .remove("reduced_motion").remove("home_theme_style").remove("wallpaper_video_enabled")
+                    .remove("home_show_clock").remove("home_show_date").remove("home_show_greeting")
+                    .remove("home_show_app_title").remove("home_show_shortcuts").remove("home_show_apps")
+                    .remove("home_show_stats").remove("home_show_race").commit();
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -438,6 +459,110 @@ public final class LauncherSettingsActivity extends Activity {
         changed(); refresh();
     }
 
+    private HomeToggle bindHomeToggle(int viewId, String key, int label, boolean defaultValue) {
+        HomeToggle toggle = new HomeToggle(viewId, key, label, defaultValue);
+        TextView row = findViewById(viewId);
+        row.setOnClickListener(v -> {
+            boolean current = choices.getBoolean(toggle.key, toggle.defaultValue);
+            choices.edit().putBoolean(toggle.key, !current).apply();
+            changed(); refresh();
+        });
+        return toggle;
+    }
+
+    private void chooseHomeTheme() {
+        Config config = Config.load(this);
+        String current = choices.getString("home_theme_style", config.cinematicHome ? "cinematic" : "basic");
+        String[] values = {"basic", "cinematic", "nocturne"};
+        int[] labels = {R.string.home_theme_basic, R.string.home_theme_cinematic, R.string.home_theme_nocturne};
+        String[] items = new String[labels.length]; int checked = 0;
+        for (int i = 0; i < labels.length; i++) {
+            items[i] = getString(labels[i]);
+            if (values[i].equals(current)) checked = i;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.home_theme_label)
+                .setSingleChoiceItems(items, checked, (dialog, which) -> {
+                    choices.edit().putString("home_theme_style", values[which]).apply();
+                    changed(); refresh(); dialog.dismiss();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showVideoWallpaperOptions() {
+        boolean enabled = choices.getBoolean("wallpaper_video_enabled", false);
+        String[] actions = enabled
+                ? new String[] {getString(R.string.video_wallpaper_choose), getString(R.string.video_wallpaper_use_images)}
+                : new String[] {getString(R.string.video_wallpaper_choose)};
+        new AlertDialog.Builder(this).setTitle(R.string.video_wallpaper_label).setItems(actions, (dialog, which) -> {
+            if (which == 0) openVideoWallpaperPicker();
+            else {
+                choices.edit().putBoolean("wallpaper_video_enabled", false).apply();
+                changed(); refresh();
+            }
+        }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void openVideoWallpaperPicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("video/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        try { startActivityForResult(intent, PICK_WALLPAPER_VIDEO); }
+        catch (ActivityNotFoundException e) { Toast.makeText(this, R.string.not_available, Toast.LENGTH_LONG).show(); }
+    }
+
+    private void importVideoWallpaper(Uri uri) {
+        File directory = Config.dir(this);
+        if (directory == null || (!directory.isDirectory() && !directory.mkdirs())) {
+            Toast.makeText(this, R.string.video_wallpaper_failed, Toast.LENGTH_LONG).show(); return;
+        }
+        Toast.makeText(this, R.string.video_wallpaper_importing, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            File temporary = new File(directory, "wallpaper-background.tmp");
+            File target = new File(directory, "wallpaper-background.mp4");
+            File previous = new File(directory, "wallpaper-background.old");
+            boolean success = false;
+            try {
+                try (InputStream in = getContentResolver().openInputStream(uri); FileOutputStream out = new FileOutputStream(temporary)) {
+                    if (in == null) throw new java.io.IOException("No video stream");
+                    byte[] buffer = new byte[16 * 1024]; long total = 0;
+                    for (int n; (n = in.read(buffer)) != -1;) {
+                        total += n;
+                        if (total > 100L * 1024 * 1024) throw new java.io.IOException("Video exceeds 100 MB");
+                        out.write(buffer, 0, n);
+                    }
+                    if (total == 0) throw new java.io.IOException("Empty video");
+                    out.getFD().sync();
+                }
+                MediaMetadataRetriever metadata = new MediaMetadataRetriever();
+                try {
+                    metadata.setDataSource(temporary.getAbsolutePath());
+                    String duration = metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    if (duration != null && Long.parseLong(duration) <= 0) throw new java.io.IOException("Invalid video duration");
+                } finally { metadata.release(); }
+                if (previous.exists()) previous.delete();
+                if (target.exists() && !target.renameTo(previous)) throw new java.io.IOException("Could not replace prior video");
+                if (!temporary.renameTo(target)) {
+                    if (previous.exists()) previous.renameTo(target);
+                    throw new java.io.IOException("Could not save selected video");
+                }
+                previous.delete();
+                success = true;
+            } catch (Exception e) {
+                temporary.delete();
+                if (previous.exists() && !target.exists()) previous.renameTo(target);
+            }
+            final boolean imported = success;
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                if (imported) {
+                    choices.edit().putBoolean("wallpaper_video_enabled", true).apply();
+                    changed(); refresh();
+                    Toast.makeText(this, R.string.video_wallpaper_applied, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, R.string.video_wallpaper_failed, Toast.LENGTH_LONG).show();
+                }
+            });
+        }, "digitaltv-video-wallpaper-import").start();
+    }
+
     private void checkForLauncherUpdate() {
         checkUpdatesChoice.setText(R.string.check_updates_checking);
         new Thread(() -> {
@@ -601,7 +726,9 @@ public final class LauncherSettingsActivity extends Activity {
     private static final String[] BACKUP_KEYS = {"columns", Config.ROWS_BELOW_DOCK_KEY, "animations", "advanced_effects",
             Config.WALLPAPER_CHOICE_KEY, "wallpaper_choices", "home_prayer_widget", "home_weather_widget", Config.DOCK_OPACITY_KEY, OpenOnStart.KEY, "home_idle_clock_seconds",
             "wallpaper_dim", "wallpaper_rotation_minutes", "home_card_order", "clock_show_prayer", "clock_show_date",
-            "clock_content_order", "clock_digit_style", "clock_format", "clock_brightness", "reduced_motion"};
+            "clock_content_order", "clock_digit_style", "clock_format", "clock_brightness", "reduced_motion",
+            "home_theme_style", "home_show_clock", "home_show_date", "home_show_greeting", "home_show_app_title",
+            "home_show_shortcuts", "home_show_apps", "home_show_stats", "home_show_race"};
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -609,9 +736,11 @@ public final class LauncherSettingsActivity extends Activity {
                 || (data.getData() == null && data.getClipData() == null))) {
             choices.edit().remove("wallpaper_pending_choices").apply(); return;
         }
+        if (requestCode == PICK_WALLPAPER_VIDEO && (resultCode != RESULT_OK || data == null || data.getData() == null)) return;
         if (resultCode != RESULT_OK || data == null || (data.getData() == null && data.getClipData() == null)) return;
         Uri uri = data.getData();
         if (requestCode == PICK_WALLPAPER) { importWallpapers(uri, data.getClipData()); return; }
+        if (requestCode == PICK_WALLPAPER_VIDEO) { importVideoWallpaper(uri); return; }
         if (requestCode == EXPORT_BACKUP) { exportBackup(uri); return; }
         if (requestCode == IMPORT_BACKUP) importBackup(uri);
     }
@@ -810,6 +939,19 @@ public final class LauncherSettingsActivity extends Activity {
                 : "@device".equals(wallpaperCurrent) ? getString(R.string.wallpaper_imported)
                 : wallpaperCurrent != null ? wallpaperCurrent : getString(R.string.wallpaper_theme_default);
         wallpaperChoice.setText(getString(R.string.wallpaper_state, wallpaperLabel));
+        boolean videoOn = choices.getBoolean("wallpaper_video_enabled", false);
+        wallpaperVideoChoice.setText(getString(R.string.video_wallpaper_state,
+                getString(videoOn ? R.string.on : R.string.off)));
+        Config themeConfig = Config.load(this);
+        String theme = choices.getString("home_theme_style", themeConfig.cinematicHome ? "cinematic" : "basic");
+        int themeLabel = "cinematic".equals(theme) ? R.string.home_theme_cinematic
+                : "nocturne".equals(theme) ? R.string.home_theme_nocturne : R.string.home_theme_basic;
+        homeThemeChoice.setText(getString(R.string.home_theme_state, getString(themeLabel)));
+        if (homeToggles != null) for (HomeToggle toggle : homeToggles) {
+            boolean enabled = choices.getBoolean(toggle.key, toggle.defaultValue);
+            ((TextView) findViewById(toggle.viewId)).setText(getString(R.string.home_element_state,
+                    getString(toggle.label), getString(enabled ? R.string.on : R.string.off)));
+        }
         int idle = choices.getInt("home_idle_clock_seconds", getResources().getInteger(R.integer.home_idle_clock_seconds));
         int idleLabel = idle == 0 ? R.string.home_idle_clock_off : idle <= 15 ? R.string.home_idle_clock_15s
                 : idle <= 30 ? R.string.home_idle_clock_30s : idle <= 45 ? R.string.home_idle_clock_45s
@@ -866,7 +1008,22 @@ public final class LauncherSettingsActivity extends Activity {
                 || choices.contains("home_card_order") || choices.contains("clock_show_prayer")
                 || choices.contains("clock_show_date") || choices.contains("clock_digit_style")
                 || choices.contains("home_prayer_widget") || choices.contains("home_weather_widget")
-                || choices.contains("clock_format") || choices.contains("clock_brightness") || choices.contains("reduced_motion");
+                || choices.contains("clock_format") || choices.contains("clock_brightness") || choices.contains("reduced_motion")
+                || choices.contains("home_theme_style") || choices.contains("wallpaper_video_enabled")
+                || choices.contains("home_show_clock") || choices.contains("home_show_date")
+                || choices.contains("home_show_greeting") || choices.contains("home_show_app_title")
+                || choices.contains("home_show_shortcuts") || choices.contains("home_show_apps")
+                || choices.contains("home_show_stats") || choices.contains("home_show_race");
+    }
+
+    private static final class HomeToggle {
+        final int viewId;
+        final String key;
+        final int label;
+        final boolean defaultValue;
+        HomeToggle(int viewId, String key, int label, boolean defaultValue) {
+            this.viewId = viewId; this.key = key; this.label = label; this.defaultValue = defaultValue;
+        }
     }
 
     private void open(Intent intent) {
